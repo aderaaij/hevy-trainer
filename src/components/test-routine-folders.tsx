@@ -1,26 +1,41 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { routineFolderService } from '@/lib/hevy';
-import type { HevyRoutineFoldersResponse, RoutineFolder, HevyApiError } from '@/lib/hevy';
+import { useState } from "react";
+import { routineFolderService } from "@/lib/hevy";
+import type {
+  HevyRoutineFoldersResponse,
+  RoutineFolder,
+  HevyApiError,
+} from "@/lib/hevy";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Loader2, FolderPlus, Folder, Calendar } from 'lucide-react';
 
 /**
  * Test component for the Hevy Routine Folder Service
  */
 export function TestRoutineFolders() {
-  const [folders, setFolders] = useState<HevyRoutineFoldersResponse | null>(null);
+  const [folders, setFolders] = useState<HevyRoutineFoldersResponse | null>(
+    null
+  );
   const [singleFolder, setSingleFolder] = useState<RoutineFolder | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [newFolderTitle, setNewFolderTitle] = useState('');
+  const [newFolderTitle, setNewFolderTitle] = useState("");
 
   const handleGetFolders = async (page: number = 1, pageSize: number = 10) => {
     setLoading(true);
     setError(null);
     setSingleFolder(null);
-    
+
     try {
-      const response = await routineFolderService.getRoutineFolders({ page, pageSize });
+      const response = await routineFolderService.getRoutineFolders({
+        page,
+        pageSize,
+      });
       setFolders(response);
     } catch (err) {
       const apiError = err as HevyApiError;
@@ -33,7 +48,7 @@ export function TestRoutineFolders() {
   const handleGetSingleFolder = async (id: string) => {
     setLoading(true);
     setError(null);
-    
+
     try {
       const folder = await routineFolderService.getRoutineFolder(id);
       setSingleFolder(folder);
@@ -48,18 +63,18 @@ export function TestRoutineFolders() {
 
   const handleCreateFolder = async () => {
     if (!newFolderTitle.trim()) {
-      setError('Please enter a folder title');
+      setError("Please enter a folder title");
       return;
     }
 
     setLoading(true);
     setError(null);
-    
+
     try {
       const folder = await routineFolderService.createFolder(newFolderTitle);
       setSingleFolder(folder);
       setFolders(null);
-      setNewFolderTitle('');
+      setNewFolderTitle("");
     } catch (err) {
       const apiError = err as HevyApiError;
       setError(`Error ${apiError.status}: ${apiError.message}`);
@@ -72,7 +87,7 @@ export function TestRoutineFolders() {
     const testTitle = `Test Folder ${Date.now()}`;
     setLoading(true);
     setError(null);
-    
+
     try {
       const folder = await routineFolderService.createFolder(testTitle);
       setSingleFolder(folder);
@@ -86,87 +101,141 @@ export function TestRoutineFolders() {
   };
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
-      <h2 className="text-2xl font-bold mb-4">Routine Folder Service Test</h2>
-      
-      <div className="space-y-4 mb-6">
-        <div className="flex gap-4">
-          <button
-            onClick={() => handleGetFolders(1, 10)}
-            disabled={loading}
-            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
-          >
-            {loading ? 'Loading...' : 'Get Folders'}
-          </button>
-          
-          <button
-            onClick={handleCreateTestFolder}
-            disabled={loading}
-            className="px-4 py-2 bg-purple-500 text-white rounded hover:bg-purple-600 disabled:opacity-50"
-          >
-            {loading ? 'Loading...' : 'Create Test Folder'}
-          </button>
-        </div>
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Folder className="h-5 w-5" />
+            Routine Folder Service Test
+          </CardTitle>
+          <CardDescription>
+            Organize your routines with folders. Full CRUD operations including create, read, and manage routine folders.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-wrap gap-3 mb-4">
+            <Button
+              onClick={() => handleGetFolders(1, 10)}
+              disabled={loading}
+              variant="default"
+            >
+              {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              Get Folders
+            </Button>
 
-        <div className="flex gap-2">
-          <input
-            type="text"
-            value={newFolderTitle}
-            onChange={(e) => setNewFolderTitle(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleCreateFolder()}
-            placeholder="Enter folder title..."
-            className="flex-1 px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-          <button
-            onClick={handleCreateFolder}
-            disabled={loading || !newFolderTitle.trim()}
-            className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 disabled:opacity-50"
-          >
-            {loading ? 'Loading...' : 'Create Folder'}
-          </button>
-        </div>
-      </div>
+            <Button
+              onClick={handleCreateTestFolder}
+              disabled={loading}
+              variant="secondary"
+            >
+              {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              Create Test Folder
+            </Button>
+          </div>
+
+          <div className="flex gap-2">
+            <Input
+              type="text"
+              value={newFolderTitle}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewFolderTitle(e.target.value)}
+              onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => e.key === "Enter" && handleCreateFolder()}
+              placeholder="Enter folder title..."
+              className="flex-1"
+            />
+            <Button
+              onClick={handleCreateFolder}
+              disabled={loading || !newFolderTitle.trim()}
+              variant="outline"
+            >
+              {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FolderPlus className="mr-2 h-4 w-4" />}
+              Create Folder
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       {error && (
-        <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
-          <strong>Error:</strong> {error}
-        </div>
+        <Alert variant="destructive">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
       )}
 
       {singleFolder && (
-        <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded">
-          <h3 className="font-semibold text-lg mb-2">Single Folder Details</h3>
-          <div className="space-y-1 text-sm">
-            <p><strong>ID:</strong> {singleFolder.id}</p>
-            <p><strong>Title:</strong> {singleFolder.title}</p>
-            <p><strong>Created:</strong> {new Date(singleFolder.created_at).toLocaleString()}</p>
-            <p><strong>Updated:</strong> {new Date(singleFolder.updated_at).toLocaleString()}</p>
-          </div>
-        </div>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Single Folder Details</CardTitle>
+            <CardDescription>Detailed view of the selected folder</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              <div className="flex justify-between items-center">
+                <span className="font-medium">ID:</span>
+                <Badge variant="outline">{singleFolder.id}</Badge>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="font-medium">Title:</span>
+                <span>{singleFolder.title}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="font-medium">Created:</span>
+                <Badge variant="outline" className="flex items-center gap-1">
+                  <Calendar className="h-3 w-3" />
+                  {new Date(singleFolder.created_at).toLocaleString()}
+                </Badge>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="font-medium">Updated:</span>
+                <Badge variant="outline" className="flex items-center gap-1">
+                  <Calendar className="h-3 w-3" />
+                  {new Date(singleFolder.updated_at).toLocaleString()}
+                </Badge>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       {folders && (
         <div className="space-y-4">
-          <div className="p-4 bg-gray-100 rounded">
-            <h3 className="font-semibold mb-2">API Response Summary</h3>
-            <p>Page: {folders.page} of {folders.page_count}</p>
-            <p>Routine Folders: {folders.routine_folders.length}</p>
-          </div>
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">API Response Summary</CardTitle>
+              <CardDescription>
+                Page {folders.page} of {folders.page_count} • {folders.routine_folders.length} folders loaded
+              </CardDescription>
+            </CardHeader>
+          </Card>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {folders.routine_folders.map((folder) => (
-              <div 
-                key={folder.id} 
-                className="p-4 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
+              <Card
+                key={folder.id}
+                className="hover:shadow-md transition-shadow cursor-pointer"
                 onClick={() => handleGetSingleFolder(folder.id)}
               >
-                <h4 className="font-semibold text-lg">{folder.title}</h4>
-                <div className="text-sm text-gray-600 mt-2 space-y-1">
-                  <p><strong>ID:</strong> {folder.id}</p>
-                  <p><strong>Created:</strong> {new Date(folder.created_at).toLocaleDateString()}</p>
-                </div>
-                <p className="text-xs text-gray-500 mt-2">Click to view details</p>
-              </div>
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Folder className="h-4 w-4" />
+                    {folder.title}
+                  </CardTitle>
+                  <CardDescription>Click to view details</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-muted-foreground">ID:</span>
+                      <Badge variant="secondary" className="text-xs">{folder.id}</Badge>
+                    </div>
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-muted-foreground">Created:</span>
+                      <Badge variant="outline" className="text-xs flex items-center gap-1">
+                        <Calendar className="h-3 w-3" />
+                        {new Date(folder.created_at).toLocaleDateString()}
+                      </Badge>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
             ))}
           </div>
         </div>

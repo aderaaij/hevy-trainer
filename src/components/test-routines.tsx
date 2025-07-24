@@ -1,8 +1,19 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { routineService } from '@/lib/hevy';
-import type { HevyRoutinesResponse, Routine, HevyApiError } from '@/lib/hevy';
+import { useState } from "react";
+import { routineService } from "@/lib/hevy";
+import type { HevyRoutinesResponse, Routine, HevyApiError } from "@/lib/hevy";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Loader2, BookOpen, FileText, Calendar, Users } from "lucide-react";
 
 /**
  * Test component for the Hevy Routine Service
@@ -17,7 +28,7 @@ export function TestRoutines() {
     setLoading(true);
     setError(null);
     setSingleRoutine(null);
-    
+
     try {
       const response = await routineService.getRoutines({ page, pageSize });
       setRoutines(response);
@@ -32,7 +43,7 @@ export function TestRoutines() {
   const handleGetSingleRoutine = async (id: string) => {
     setLoading(true);
     setError(null);
-    
+
     try {
       const routine = await routineService.getRoutine(id);
       setSingleRoutine(routine);
@@ -48,22 +59,22 @@ export function TestRoutines() {
   const handleCreateSimpleRoutine = async () => {
     setLoading(true);
     setError(null);
-    
+
     try {
       const routine = await routineService.createSimpleRoutine(
         `Test Routine ${Date.now()}`,
         [
           {
-            exercise_template_id: 'D04AC939', // Squat
+            exercise_template_id: "D04AC939", // Squat
             weight_kg: 60,
             reps: 10,
             sets: 3,
             rest_seconds: 90,
-            notes: 'Focus on form',
+            notes: "Focus on form",
           },
         ],
         {
-          notes: 'Created via test component',
+          notes: "Created via test component",
         }
       );
       setSingleRoutine(routine);
@@ -77,106 +88,253 @@ export function TestRoutines() {
   };
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
-      <h2 className="text-2xl font-bold mb-4">Routine Service Test</h2>
-      
-      <div className="flex gap-4 mb-6">
-        <button
-          onClick={() => handleGetRoutines(1, 5)}
-          disabled={loading}
-          className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
-        >
-          {loading ? 'Loading...' : 'Get Routines'}
-        </button>
-        
-        <button
-          onClick={() => handleGetRoutines(1, 10)}
-          disabled={loading}
-          className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 disabled:opacity-50"
-        >
-          {loading ? 'Loading...' : 'Get 10 Routines'}
-        </button>
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <BookOpen className="h-5 w-5" />
+            Routine Service Test
+          </CardTitle>
+          <CardDescription>
+            Manage workout routines with full CRUD operations. Create, read,
+            update, and delete routines with exercises.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-wrap gap-3">
+            <Button
+              onClick={() => handleGetRoutines(1, 5)}
+              disabled={loading}
+              variant="default"
+            >
+              {loading ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : null}
+              Get Routines
+            </Button>
 
-        <button
-          onClick={handleCreateSimpleRoutine}
-          disabled={loading}
-          className="px-4 py-2 bg-purple-500 text-white rounded hover:bg-purple-600 disabled:opacity-50"
-        >
-          {loading ? 'Loading...' : 'Create Test Routine'}
-        </button>
-      </div>
+            <Button
+              onClick={() => handleGetRoutines(1, 10)}
+              disabled={loading}
+              variant="secondary"
+            >
+              {loading ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : null}
+              Get 10 Routines
+            </Button>
+
+            <Button
+              onClick={handleCreateSimpleRoutine}
+              disabled={loading}
+              variant="outline"
+            >
+              {loading ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : null}
+              Create Test Routine
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       {error && (
-        <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
-          <strong>Error:</strong> {error}
-        </div>
+        <Alert variant="destructive">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
       )}
 
       {singleRoutine && (
-        <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded">
-          <h3 className="font-semibold text-lg mb-2">Single Routine Details</h3>
-          <div className="space-y-2 text-sm">
-            <p><strong>ID:</strong> {singleRoutine.id}</p>
-            <p><strong>Title:</strong> {singleRoutine.title}</p>
-            <p><strong>Notes:</strong> {singleRoutine.notes || 'None'}</p>
-            <p><strong>Folder ID:</strong> {singleRoutine.folder_id || 'None'}</p>
-            <p><strong>Exercises:</strong> {singleRoutine.exercises.length}</p>
-            <p><strong>Created:</strong> {new Date(singleRoutine.created_at).toLocaleString()}</p>
-            <p><strong>Updated:</strong> {new Date(singleRoutine.updated_at).toLocaleString()}</p>
-            
-            {singleRoutine.exercises.length > 0 && (
-              <div className="mt-4">
-                <h4 className="font-medium mb-2">Exercises:</h4>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <FileText className="h-4 w-4" />
+              Single Routine Details
+            </CardTitle>
+            <CardDescription>
+              Detailed view of the selected routine
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  {singleRoutine.exercises.map((exercise, index) => (
-                    <div key={index} className="pl-4 border-l-2 border-gray-300">
-                      <p><strong>Template ID:</strong> {exercise.exercise_template_id}</p>
-                      <p><strong>Sets:</strong> {exercise.sets.length}</p>
-                      <p><strong>Rest:</strong> {exercise.rest_seconds}s</p>
-                      {exercise.notes && <p><strong>Notes:</strong> {exercise.notes}</p>}
-                      
-                      <div className="mt-1 text-xs text-gray-600">
-                        <p>Sets: {exercise.sets.map(set => 
-                          `${set.weight_kg}kg × ${set.reps} (${set.rep_range.start}-${set.rep_range.end})`
-                        ).join(', ')}</p>
-                      </div>
-                    </div>
-                  ))}
+                  <div className="flex justify-between items-center">
+                    <span className="font-medium">ID:</span>
+                    <Badge variant="outline">{singleRoutine.id}</Badge>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="font-medium">Title:</span>
+                    <span>{singleRoutine.title}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="font-medium">Notes:</span>
+                    <span className="text-sm text-muted-foreground">
+                      {singleRoutine.notes || "None"}
+                    </span>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="font-medium">Exercises:</span>
+                    <Badge
+                      variant="secondary"
+                      className="flex items-center gap-1"
+                    >
+                      <Users className="h-3 w-3" />
+                      {singleRoutine?.exercises?.length}
+                    </Badge>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="font-medium">Folder:</span>
+                    <Badge
+                      variant={singleRoutine.folder_id ? "default" : "outline"}
+                    >
+                      {singleRoutine.folder_id || "No folder"}
+                    </Badge>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="font-medium">Created:</span>
+                    <Badge
+                      variant="outline"
+                      className="text-xs flex items-center gap-1"
+                    >
+                      <Calendar className="h-3 w-3" />
+                      {new Date(singleRoutine.created_at).toLocaleDateString()}
+                    </Badge>
+                  </div>
                 </div>
               </div>
-            )}
-          </div>
-        </div>
+
+              {singleRoutine?.exercises?.length > 0 && (
+                <div className="mt-6">
+                  <h4 className="font-medium mb-3 flex items-center gap-2">
+                    <Users className="h-4 w-4" />
+                    Exercises:
+                  </h4>
+                  <div className="space-y-3">
+                    {singleRoutine?.exercises?.map((exercise, index) => (
+                      <Card key={index} className="bg-muted/50">
+                        <CardContent className="pt-4">
+                          <div className="space-y-2">
+                            <div className="flex justify-between items-center">
+                              <span className="font-medium text-base">
+                                {exercise.title}
+                              </span>
+                              <Badge variant="outline" className="text-xs">
+                                {exercise.exercise_template_id}
+                              </Badge>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <span className="font-medium">Sets:</span>
+                              <Badge variant="secondary">
+                                {exercise.sets.length}
+                              </Badge>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <span className="font-medium">Rest:</span>
+                              <Badge variant="outline">
+                                {exercise.rest_seconds}s
+                              </Badge>
+                            </div>
+                            {exercise.notes && (
+                              <div className="flex justify-between items-start">
+                                <span className="font-medium">Notes:</span>
+                                <span className="text-sm text-muted-foreground">
+                                  {exercise.notes}
+                                </span>
+                              </div>
+                            )}
+
+                            <div className="mt-3 pt-3 border-t">
+                              <p className="text-sm font-medium mb-2">Sets:</p>
+                              <div className="text-xs text-muted-foreground space-y-1">
+                                {exercise.sets.map((set, setIndex) => (
+                                  <Badge
+                                    key={setIndex}
+                                    variant="secondary"
+                                    className="mr-2"
+                                  >
+                                    {set.weight_kg
+                                      ? `${set.weight_kg}kg`
+                                      : "BW"}{" "}
+                                    × {set.reps}
+                                    {set.rep_range
+                                      ? ` (${set.rep_range.start}-${set.rep_range.end})`
+                                      : ""}
+                                  </Badge>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       {routines && (
         <div className="space-y-4">
-          <div className="p-4 bg-gray-100 rounded">
-            <h3 className="font-semibold mb-2">API Response Summary</h3>
-            <p>Page: {routines.page} of {routines.page_count}</p>
-            <p>Routines: {routines.routines.length}</p>
-          </div>
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">API Response Summary</CardTitle>
+              <CardDescription>
+                Page {routines.page} of {routines.page_count} •{" "}
+                {routines.routines.length} routines loaded
+              </CardDescription>
+            </CardHeader>
+          </Card>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {routines.routines.map((routine) => (
-              <div 
-                key={routine.id} 
-                className="p-4 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
+              <Card
+                key={routine.id}
+                className="hover:shadow-md transition-shadow cursor-pointer"
                 onClick={() => handleGetSingleRoutine(routine.id)}
               >
-                <h4 className="font-semibold text-lg">{routine.title}</h4>
-                <div className="text-sm text-gray-600 mt-2 space-y-1">
-                  <p><strong>Exercises:</strong> {routine.exercises.length}</p>
-                  {routine.notes && <p><strong>Notes:</strong> {routine.notes}</p>}
-                  <p><strong>Created:</strong> {new Date(routine.created_at).toLocaleDateString()}</p>
-                  {routine.folder_id && (
-                    <span className="inline-block px-2 py-1 bg-green-100 text-green-700 text-xs rounded mt-2">
-                      In Folder: {routine.folder_id}
-                    </span>
-                  )}
-                </div>
-                <p className="text-xs text-gray-500 mt-2">Click to view details</p>
-              </div>
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <BookOpen className="h-4 w-4" />
+                    {routine.title}
+                  </CardTitle>
+                  <CardDescription>Click to view details</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    <div className="flex flex-wrap gap-2">
+                      <Badge
+                        variant="outline"
+                        className="flex items-center gap-1"
+                      >
+                        <Users className="h-3 w-3" />
+                        {routine.exercises.length} exercises
+                      </Badge>
+                      <Badge
+                        variant="outline"
+                        className="flex items-center gap-1"
+                      >
+                        <Calendar className="h-3 w-3" />
+                        {new Date(routine.created_at).toLocaleDateString()}
+                      </Badge>
+                      {routine.folder_id && (
+                        <Badge variant="default">
+                          Folder: {routine.folder_id}
+                        </Badge>
+                      )}
+                    </div>
+                    {routine.notes && (
+                      <p className="text-sm text-muted-foreground">
+                        <strong>Notes:</strong> {routine.notes}
+                      </p>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
             ))}
           </div>
         </div>

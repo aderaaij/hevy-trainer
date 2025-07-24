@@ -20,21 +20,24 @@ export interface Routine {
 }
 
 export interface RoutineExercise {
+  index: number;
+  title: string;
   exercise_template_id: string;
   superset_id: string | null;
   rest_seconds: number;
-  notes: string;
+  notes: string | null;
   sets: RoutineSet[];
 }
 
 export interface RoutineSet {
+  index: number;
   type: RoutineSetType;
-  weight_kg: number;
+  weight_kg: number | null;
   reps: number;
   distance_meters: number | null;
   duration_seconds: number | null;
   custom_metric: unknown | null;
-  rep_range: RepRange;
+  rep_range?: RepRange; // Optional since it's not always present in actual API responses
 }
 
 export interface RepRange {

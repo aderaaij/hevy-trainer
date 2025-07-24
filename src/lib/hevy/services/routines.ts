@@ -38,7 +38,8 @@ export class RoutineService {
    * @param id - The routine ID (UUID)
    */
   async getRoutine(id: string): Promise<Routine> {
-    return hevyApiClient.get<Routine>(`/routines/${id}`);
+    const response = await hevyApiClient.get<{ routine: Routine }>(`/routines/${id}`);
+    return response.routine;
   }
 
   /**

@@ -3,6 +3,11 @@
 import { useState } from 'react';
 import { exerciseTemplateService } from '@/lib/hevy';
 import type { HevyExerciseTemplatesResponse, ExerciseTemplate, HevyApiError } from '@/lib/hevy';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
+import { Loader2, Target } from 'lucide-react';
 
 /**
  * Test component for the Hevy Exercise Template Service
@@ -48,87 +53,158 @@ export function TestExerciseTemplates() {
   };
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
-      <h2 className="text-2xl font-bold mb-4">Exercise Template Service Test</h2>
-      
-      <div className="flex gap-4 mb-6">
-        <button
-          onClick={() => handleGetTemplates(1, 10)}
-          disabled={loading}
-          className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
-        >
-          {loading ? 'Loading...' : 'Get Templates (Page 1)'}
-        </button>
-        
-        <button
-          onClick={() => handleGetTemplates(1, 20)}
-          disabled={loading}
-          className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 disabled:opacity-50"
-        >
-          {loading ? 'Loading...' : 'Get 20 Templates'}
-        </button>
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Target className="h-5 w-5" />
+            Exercise Template Service Test
+          </CardTitle>
+          <CardDescription>
+            Browse exercise templates with pagination support. Read-only access to the exercise database.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-wrap gap-3">
+            <Button
+              onClick={() => handleGetTemplates(1, 10)}
+              disabled={loading}
+              variant="default"
+            >
+              {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              Get Templates
+            </Button>
+            
+            <Button
+              onClick={() => handleGetTemplates(1, 20)}
+              disabled={loading}
+              variant="secondary"
+            >
+              {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              Get 20 Templates
+            </Button>
 
-        <button
-          onClick={() => handleGetTemplates(2, 10)}
-          disabled={loading}
-          className="px-4 py-2 bg-purple-500 text-white rounded hover:bg-purple-600 disabled:opacity-50"
-        >
-          {loading ? 'Loading...' : 'Get Page 2'}
-        </button>
-      </div>
+            <Button
+              onClick={() => handleGetTemplates(2, 10)}
+              disabled={loading}
+              variant="outline"
+            >
+              {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              Page 2
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       {error && (
-        <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
-          <strong>Error:</strong> {error}
-        </div>
+        <Alert variant="destructive">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
       )}
 
       {singleTemplate && (
-        <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded">
-          <h3 className="font-semibold text-lg mb-2">Single Template Details</h3>
-          <div className="space-y-1 text-sm">
-            <p><strong>ID:</strong> {singleTemplate.id}</p>
-            <p><strong>Title:</strong> {singleTemplate.title}</p>
-            <p><strong>Type:</strong> {singleTemplate.type}</p>
-            <p><strong>Primary Muscle:</strong> {singleTemplate.primary_muscle_group}</p>
-            <p><strong>Secondary Muscles:</strong> {singleTemplate.secondary_muscle_groups.join(', ') || 'None'}</p>
-            <p><strong>Equipment:</strong> {singleTemplate.equipment}</p>
-            <p><strong>Custom:</strong> {singleTemplate.is_custom ? 'Yes' : 'No'}</p>
-          </div>
-        </div>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Target className="h-4 w-4" />
+              Single Template Details
+            </CardTitle>
+            <CardDescription>Detailed view of the selected exercise template</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="font-medium">ID:</span>
+                  <Badge variant="outline">{singleTemplate.id}</Badge>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="font-medium">Title:</span>
+                  <span>{singleTemplate.title}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="font-medium">Type:</span>
+                  <Badge variant="secondary" className="capitalize">
+                    {singleTemplate.type.replace('_', ' ')}
+                  </Badge>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="font-medium">Equipment:</span>
+                  <Badge variant="outline">{singleTemplate.equipment}</Badge>
+                </div>
+              </div>
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="font-medium">Primary Muscle:</span>
+                  <Badge variant="default">{singleTemplate.primary_muscle_group}</Badge>
+                </div>
+                <div className="flex justify-between items-start">
+                  <span className="font-medium">Secondary:</span>
+                  <div className="flex flex-wrap gap-1 max-w-48">
+                    {singleTemplate.secondary_muscle_groups.length > 0 ? (
+                      singleTemplate.secondary_muscle_groups.map((muscle) => (
+                        <Badge key={muscle} variant="secondary" className="text-xs">
+                          {muscle}
+                        </Badge>
+                      ))
+                    ) : (
+                      <span className="text-sm text-muted-foreground">None</span>
+                    )}
+                  </div>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="font-medium">Custom:</span>
+                  <Badge variant={singleTemplate.is_custom ? "default" : "outline"}>
+                    {singleTemplate.is_custom ? 'Yes' : 'No'}
+                  </Badge>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       {templates && (
         <div className="space-y-4">
-          <div className="p-4 bg-gray-100 rounded">
-            <h3 className="font-semibold mb-2">API Response Summary</h3>
-            <p>Page: {templates.page} of {templates.page_count}</p>
-            <p>Exercise Templates: {templates.exercise_templates.length}</p>
-          </div>
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">API Response Summary</CardTitle>
+              <CardDescription>
+                Page {templates.page} of {templates.page_count} • {templates.exercise_templates.length} templates loaded
+              </CardDescription>
+            </CardHeader>
+          </Card>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {templates.exercise_templates.map((template) => (
-              <div 
+              <Card 
                 key={template.id} 
-                className="p-4 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
+                className="hover:shadow-md transition-shadow cursor-pointer"
                 onClick={() => handleGetSingleTemplate(template.id)}
               >
-                <h4 className="font-semibold text-lg">{template.title}</h4>
-                <div className="text-sm text-gray-600 mt-2 space-y-1">
-                  <p><strong>Type:</strong> {template.type.replace('_', ' ')}</p>
-                  <p><strong>Primary Muscle:</strong> {template.primary_muscle_group}</p>
-                  {template.secondary_muscle_groups.length > 0 && (
-                    <p><strong>Secondary:</strong> {template.secondary_muscle_groups.join(', ')}</p>
-                  )}
-                  <p><strong>Equipment:</strong> {template.equipment}</p>
-                  {template.is_custom && (
-                    <span className="inline-block px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded mt-2">
-                      Custom
-                    </span>
-                  )}
-                </div>
-                <p className="text-xs text-gray-500 mt-2">Click to view details</p>
-              </div>
+                <CardHeader>
+                  <CardTitle className="text-lg">{template.title}</CardTitle>
+                  <CardDescription className="capitalize">
+                    {template.type.replace('_', ' ')} • {template.equipment}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    <Badge variant="outline">
+                      {template.primary_muscle_group}
+                    </Badge>
+                    {template.secondary_muscle_groups.map((muscle) => (
+                      <Badge key={muscle} variant="secondary" className="text-xs">
+                        {muscle}
+                      </Badge>
+                    ))}
+                    {template.is_custom && (
+                      <Badge variant="default">Custom</Badge>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground">Click to view details</p>
+                </CardContent>
+              </Card>
             ))}
           </div>
         </div>

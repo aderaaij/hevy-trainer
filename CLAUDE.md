@@ -105,8 +105,12 @@ src/
 
 ### Hevy API - Complete Endpoint Documentation
 
+#### Important API Limitations
+- **Maximum pageSize for workouts**: 10 (this is a hard limit from the Hevy API)
+- When fetching workouts, always use `pageSize: 10` or less
+
 #### Workout Endpoints (6 endpoints)
-- `GET /v1/workouts` - Get paginated list of workouts
+- `GET /v1/workouts` - Get paginated list of workouts (max pageSize: 10)
 - `GET /v1/workouts/count` - Get total workout count
 - `GET /v1/workouts/events` - Get workout events with date filtering
 - `GET /v1/workouts/{workoutId}` - Get single workout by ID
