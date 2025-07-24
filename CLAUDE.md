@@ -103,11 +103,38 @@ src/
 
 ## API Integrations
 
-### Hevy API Endpoints
-- `/auth/login` - User authentication
-- `/workouts` - Fetch workout history
-- `/exercise-templates` - Get exercise database
-- `/routines` - Create/manage workout routines
+### Hevy API - Complete Endpoint Documentation
+
+#### Workout Endpoints (6 endpoints)
+- `GET /v1/workouts` - Get paginated list of workouts
+- `GET /v1/workouts/count` - Get total workout count
+- `GET /v1/workouts/events` - Get workout events with date filtering
+- `GET /v1/workouts/{workoutId}` - Get single workout by ID
+- `POST /v1/workouts` - Create new workout
+- `PUT /v1/workouts/{workoutId}` - Update existing workout
+
+#### Routine Endpoints (4 endpoints)
+- `GET /v1/routines` - Get paginated list of routines
+- `GET /v1/routines/{routineId}` - Get single routine by ID
+- `POST /v1/routines` - Create new routine
+- `PUT /v1/routines/{routineId}` - Update existing routine
+
+#### Exercise Template Endpoints (2 endpoints)
+- `GET /v1/exercise_templates` - Get paginated list of exercise templates
+- `GET /v1/exercise_templates/{exerciseTemplateId}` - Get single exercise template by ID
+
+#### Routine Folder Endpoints (3 endpoints)
+- `GET /v1/routine_folders` - Get paginated list of routine folders
+- `GET /v1/routine_folders/{folderId}` - Get single routine folder by ID
+- `POST /v1/routine_folders` - Create new routine folder
+
+### Available Services
+All services are available via `import { serviceName } from '@/lib/hevy'`:
+
+1. **workoutService** - Complete workout management with CRUD operations
+2. **routineService** - Complete routine management with CRUD operations
+3. **exerciseTemplateService** - Read-only exercise template access
+4. **routineFolderService** - Routine folder management
 
 ### OpenAI Integration
 - GPT-4 for workout generation

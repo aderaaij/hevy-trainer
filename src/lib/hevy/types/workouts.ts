@@ -45,40 +45,66 @@ export type SetType = 'normal' | 'warmup' | 'failure' | 'drop' | string;
 export interface WorkoutFilters {
   page?: number;
   pageSize?: number;
-  startDate?: string; // ISO date string
-  endDate?: string;   // ISO date string
+}
+
+// Workout Events filters
+export interface WorkoutEventsFilters {
+  page?: number;
+  pageSize?: number;
+  since?: string; // ISO 8601 timestamp
+}
+
+// Workout count response
+export interface WorkoutCountResponse {
+  count: number;
+}
+
+// Workout events response
+export interface HevyWorkoutEventsResponse {
+  page: number;
+  page_count: number;
+  workout_events: WorkoutEvent[];
+}
+
+export interface WorkoutEvent {
+  // Structure to be determined from actual API responses
+  // The Postman collection doesn't include response examples
+  id: string;
+  type: string;
+  created_at: string;
+  // Additional fields may exist
 }
 
 // Request types for creating/updating workouts
 export interface CreateWorkoutRequest {
-  title: string;
-  description?: string;
-  start_time: string;
-  end_time?: string;
-  exercises: CreateExerciseRequest[];
+  workout: {
+    title: string;
+    description?: string;
+    start_time: string; // ISO 8601 timestamp
+    end_time?: string; // ISO 8601 timestamp
+    is_private?: boolean;
+    exercises: CreateWorkoutExerciseRequest[];
+  };
 }
 
-export interface CreateExerciseRequest {
-  index: number;
-  title: string;
-  notes?: string;
+export interface CreateWorkoutExerciseRequest {
   exercise_template_id: string;
   superset_id?: string | null;
-  sets: CreateSetRequest[];
+  notes?: string;
+  sets: CreateWorkoutSetRequest[];
 }
 
-export interface CreateSetRequest {
-  index: number;
+export interface CreateWorkoutSetRequest {
   type: SetType;
   weight_kg: number;
   reps: number;
   distance_meters?: number | null;
   duration_seconds?: number | null;
+  custom_metric?: unknown | null;
   rpe?: number | null;
-  custom_metric?: number | null;
 }
 
-export type UpdateWorkoutRequest = Partial<CreateWorkoutRequest>;
+export type UpdateWorkoutRequest = CreateWorkoutRequest;
 
 // API Error types
 export interface HevyApiError {
