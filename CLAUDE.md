@@ -95,11 +95,11 @@ src/
 2. **No Test Setup**: No testing framework is currently configured
 3. **Environment Variables**: Use `.env.local` for local environment variables (create if needed)
 4. **Required Environment Variables**:
-   - `OPENAI_API_KEY` - For GPT-4 integration
+   - `OPENAI_API_KEY` - For GPT-4 integration (server-side only)
    - `NEXT_PUBLIC_SUPABASE_URL` - Supabase project URL
    - `NEXT_PUBLIC_SUPABASE_ANON_KEY` - Supabase anonymous key
-   - `SUPABASE_SERVICE_ROLE_KEY` - Supabase service role key
-   - `NEXT_PUBLIC_HEVY_API_KEY` - Hevy API key for workout data integration
+   - `SUPABASE_SERVICE_ROLE_KEY` - Supabase service role key (server-side only)
+   - `HEVY_API_KEY` - Hevy API key for workout data integration (server-side only, DO NOT prefix with NEXT_PUBLIC_)
 
 ## API Integrations
 

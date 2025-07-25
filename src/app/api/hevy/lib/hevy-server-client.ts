@@ -1,16 +1,15 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
-import { HevyApiError } from './types/workouts';
 
 /**
- * Client-side HTTP client that proxies requests through our API routes
- * This keeps the API key secure on the server side
+ * Server-side HTTP client for Hevy API
+ * This should only be used in API routes, not in client components
  */
-export class HevyApiClient {
+export class HevyServerClient {
   private client: AxiosInstance;
 
   constructor() {
     this.client = axios.create({
-      baseURL: '/api/hevy', // Use our API routes instead of direct Hevy API
+      baseURL: 'https://api.hevyapp.com/v1',
       headers: {
         'accept': 'application/json',
         'Content-Type': 'application/json',
@@ -22,19 +21,36 @@ export class HevyApiClient {
   }
 
   private setupInterceptors() {
+    // Request interceptor to add API key
+    this.client.interceptors.request.use(
+      (config) => {
+        const apiKey = process.env.HEVY_API_KEY; // Note: NOT NEXT_PUBLIC_
+        
+        if (!apiKey) {
+          throw new Error('HEVY_API_KEY environment variable is required');
+        }
+
+        config.headers['api-key'] = apiKey;
+        return config;
+      },
+      (error) => {
+        return Promise.reject(error);
+      }
+    );
+
     // Response interceptor for error handling
     this.client.interceptors.response.use(
       (response: AxiosResponse) => response,
       (error) => {
-        const apiError: HevyApiError = {
-          message: error.response?.data?.error || error.message || 'An unknown error occurred',
+        const apiError = {
+          message: error.response?.data?.message || error.message || 'An unknown error occurred',
           status: error.response?.status || 500,
           code: error.response?.data?.code,
         };
 
         // Log error for debugging (in development)
         if (process.env.NODE_ENV === 'development') {
-          console.error('API Error:', {
+          console.error('Hevy API Error:', {
             url: error.config?.url,
             method: error.config?.method,
             status: apiError.status,
@@ -78,15 +94,7 @@ export class HevyApiClient {
     const response = await this.client.delete<T>(url, config);
     return response.data;
   }
-
-  /**
-   * PATCH request
-   */
-  async patch<T>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T> {
-    const response = await this.client.patch<T>(url, data, config);
-    return response.data;
-  }
 }
 
-// Export singleton instance
-export const hevyApiClient = new HevyApiClient();
+// Export singleton instance for server-side use only
+export const hevyServerClient = new HevyServerClient();
