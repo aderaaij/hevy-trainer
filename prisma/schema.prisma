@@ -19,7 +19,8 @@ datasource db {
 model UserProfile {
   id               String   @id @default(cuid())
   userId           String   @unique @map("user_id") // References auth.users.id
-  age              Int?
+  age              Int?     // Calculated from birthDate, kept for backward compatibility
+  birthDate        DateTime? @map("birth_date") // Primary field for age calculation
   weight           Float?   // in kg
   trainingFrequency Int?    // days per week
   focusAreas       String[] // e.g., ["strength", "hypertrophy", "endurance"]

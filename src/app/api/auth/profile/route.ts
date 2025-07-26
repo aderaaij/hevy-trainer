@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { userId, age, weight, trainingFrequency, experienceLevel, focusAreas, injuries } = body
+    const { userId, age, birthDate, weight, trainingFrequency, experienceLevel, focusAreas, injuries } = body
 
     // Verify the userId matches the authenticated user
     if (userId !== user.id) {
@@ -33,6 +33,7 @@ export async function POST(request: NextRequest) {
       where: { userId },
       update: {
         age,
+        birthDate: birthDate ? new Date(birthDate) : null,
         weight,
         trainingFrequency,
         experienceLevel,
@@ -42,6 +43,7 @@ export async function POST(request: NextRequest) {
       create: {
         userId,
         age,
+        birthDate: birthDate ? new Date(birthDate) : null,
         weight,
         trainingFrequency,
         experienceLevel,
@@ -88,6 +90,56 @@ export async function GET() {
     console.error('Error fetching profile:', error)
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Failed to fetch profile' },
+      { status: 500 }
+    )
+  }
+}
+
+export async function PUT(request: NextRequest) {
+  try {
+    const supabase = await createClient()
+    
+    // Verify user is authenticated
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    if (authError || !user) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
+    const body = await request.json()
+    const { age, birthDate, weight, trainingFrequency, experienceLevel, focusAreas, injuries } = body
+
+    // Update or create user profile
+    const profile = await prisma.userProfile.upsert({
+      where: { userId: user.id },
+      update: {
+        age,
+        birthDate: birthDate ? new Date(birthDate) : null,
+        weight,
+        trainingFrequency,
+        experienceLevel,
+        focusAreas: focusAreas || [],
+        injuries: injuries || [],
+      },
+      create: {
+        userId: user.id,
+        age,
+        birthDate: birthDate ? new Date(birthDate) : null,
+        weight,
+        trainingFrequency,
+        experienceLevel,
+        focusAreas: focusAreas || [],
+        injuries: injuries || [],
+      },
+    })
+
+    return NextResponse.json(profile)
+  } catch (error) {
+    console.error('Error updating profile:', error)
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Failed to update profile' },
       { status: 500 }
     )
   }

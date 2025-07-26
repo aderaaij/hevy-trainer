@@ -1,5 +1,8 @@
 import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
+import Link from "next/link"
+import { Button } from "@/components/ui/button"
+import { User, Settings, Home } from "lucide-react"
 
 export default async function DashboardPage() {
   const supabase = await createClient()
@@ -12,13 +15,40 @@ export default async function DashboardPage() {
 
   return (
     <div className="container mx-auto p-6">
-      <h1 className="text-3xl font-bold mb-6">Dashboard</h1>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-3xl font-bold">Dashboard</h1>
+        <div className="flex gap-2">
+          <Link href="/">
+            <Button variant="outline" size="sm">
+              <Home className="h-4 w-4 mr-2" />
+              Home
+            </Button>
+          </Link>
+          <Link href="/profile">
+            <Button variant="outline" size="sm">
+              <User className="h-4 w-4 mr-2" />
+              Profile
+            </Button>
+          </Link>
+        </div>
+      </div>
+      
       <div className="grid gap-6">
         <div className="p-6 bg-white dark:bg-neutral-800 rounded-lg shadow">
-          <h2 className="text-xl font-semibold mb-2">Welcome back!</h2>
-          <p className="text-neutral-600 dark:text-neutral-400">
-            You&apos;re signed in as {user.email}
-          </p>
+          <div className="flex items-start justify-between">
+            <div>
+              <h2 className="text-xl font-semibold mb-2">Welcome back!</h2>
+              <p className="text-neutral-600 dark:text-neutral-400">
+                You&apos;re signed in as {user.email}
+              </p>
+            </div>
+            <Link href="/profile">
+              <Button variant="outline" size="sm">
+                <Settings className="h-4 w-4 mr-2" />
+                Settings
+              </Button>
+            </Link>
+          </div>
         </div>
         
         <div className="grid md:grid-cols-3 gap-6">

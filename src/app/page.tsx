@@ -24,6 +24,9 @@ export default async function Home() {
                 <span className="text-sm text-muted-foreground">
                   {user.email}
                 </span>
+                <Link href="/profile">
+                  <Button variant="outline" size="sm">Profile</Button>
+                </Link>
                 <Link href="/dashboard">
                   <Button variant="outline">Dashboard</Button>
                 </Link>

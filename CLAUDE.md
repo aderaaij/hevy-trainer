@@ -63,6 +63,7 @@ src/
 │   │   ├── login/page.tsx        # Login page
 │   │   └── signup/page.tsx       # Signup page
 │   ├── dashboard/page.tsx        # Protected dashboard page
+│   ├── profile/page.tsx          # User profile settings page
 │   ├── api/                      # API routes
 │   │   ├── auth/                 # Auth API routes
 │   │   │   ├── profile/route.ts  # User profile CRUD
@@ -79,6 +80,8 @@ src/
 │   ├── auth/                     # Authentication components
 │   │   ├── login-form.tsx        # Login form with validation
 │   │   └── signup-form.tsx       # Signup form with user profile
+│   ├── profile/                  # Profile management components
+│   │   └── profile-form.tsx      # Comprehensive profile editing form
 │   ├── ui/                       # Shadcn/ui components
 │   └── test-*/                   # API testing components
 ├── lib/                          # Utility libraries
