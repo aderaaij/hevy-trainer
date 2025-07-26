@@ -7,7 +7,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 This is an AI-powered personal trainer web application that integrates with Hevy (workout tracking app) to create intelligent, personalized workout routines. The AI analyzes users' workout history from Hevy and generates new training programs considering professional training principles like periodization, progressive overload, and deload weeks.
 
 ### Core Features
-- **User Profile**: Age, weight, injuries, training frequency, focus areas
+- **User Authentication**: Complete Supabase Auth integration with email verification
+- **Comprehensive User Profiles**: 
+  - Birth date with automatic age calculation
+  - Weight tracking
+  - Training frequency and experience level
+  - Focus areas (strength, hypertrophy, endurance, etc.)
+  - Injury tracking with detailed descriptions
+  - Other sports/activities tracking
 - **Hevy Integration**: Import workout history and export new routines
 - **AI Workout Generation**: OpenAI-powered routine creation based on user data and training history
 - **Smart Programming**: Automatic periodization, deload weeks, exercise variation
@@ -83,6 +90,15 @@ src/
 │   ├── profile/                  # Profile management components
 │   │   └── profile-form.tsx      # Comprehensive profile editing form
 │   ├── ui/                       # Shadcn/ui components
+│   │   ├── button.tsx            # Button component
+│   │   ├── calendar.tsx          # Calendar for date picker
+│   │   ├── card.tsx              # Card layout component
+│   │   ├── date-picker.tsx       # Enhanced date picker with year/month navigation
+│   │   ├── form.tsx              # Form components with react-hook-form
+│   │   ├── input.tsx             # Input component
+│   │   ├── popover.tsx           # Popover for date picker
+│   │   ├── select.tsx            # Select dropdown component
+│   │   └── textarea.tsx          # Textarea component
 │   └── test-*/                   # API testing components
 ├── lib/                          # Utility libraries
 │   ├── supabase/                 # Supabase client utilities
@@ -94,7 +110,11 @@ src/
 │   │   ├── client.ts             # HTTP client (proxied)
 │   │   ├── services/             # API service layer
 │   │   └── types/                # TypeScript definitions
-│   └── analysis/                 # Workout analysis tools
+│   ├── analysis/                 # Workout analysis tools
+│   ├── constants/                # Shared constants
+│   │   └── profile.ts            # Focus areas and injury types
+│   └── utils/                    # Utility functions
+│       └── age.ts                # Age calculation and date validation
 ├── generated/prisma/             # Generated Prisma client
 ├── middleware.ts                 # Next.js middleware for auth
 └── types/                        # Shared TypeScript types
@@ -127,6 +147,35 @@ src/
 - Tailwind CSS utilities for styling
 - CSS variables for theming (already configured for light/dark mode)
 - Global styles in `src/app/globals.css`
+- Shadcn/ui components for consistent UI patterns
+
+## Database Schema
+
+### UserProfile Table
+Comprehensive user profile with training context:
+```prisma
+model UserProfile {
+  id               String   @id @default(cuid())
+  userId           String   @unique @map("user_id") // References auth.users.id
+  age              Int?     // Calculated from birthDate
+  birthDate        DateTime? @map("birth_date") // Primary field for age calculation
+  weight           Float?   // in kg
+  trainingFrequency Int?    // days per week
+  focusAreas       String[] // ["strength", "hypertrophy", "endurance", etc.]
+  injuries         String[] // ["lower_back", "knee", "shoulder", etc.]
+  injuryDetails    String?  @map("injury_details") // Detailed injury descriptions
+  otherActivities  String?  @map("other_activities") // Other sports with frequency
+  experienceLevel  String?  // "beginner", "intermediate", "advanced"
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+```
+
+### Key Features:
+- **Birth Date System**: Users input birth date, age is calculated automatically
+- **Enhanced Date Picker**: Custom component with year/month navigation for easy birth date selection
+- **Injury Tracking**: Both categorical selection and detailed text descriptions
+- **Activity Context**: Tracks other sports/activities for comprehensive training load understanding
 
 ## Important Notes
 

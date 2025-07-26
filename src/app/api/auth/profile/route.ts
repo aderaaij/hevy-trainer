@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { userId, age, birthDate, weight, trainingFrequency, experienceLevel, focusAreas, injuries } = body
+    const { userId, age, birthDate, weight, trainingFrequency, experienceLevel, focusAreas, injuries, injuryDetails, otherActivities } = body
 
     // Verify the userId matches the authenticated user
     if (userId !== user.id) {
@@ -39,6 +39,8 @@ export async function POST(request: NextRequest) {
         experienceLevel,
         focusAreas: focusAreas || [],
         injuries: injuries || [],
+        injuryDetails,
+        otherActivities,
       },
       create: {
         userId,
@@ -49,6 +51,8 @@ export async function POST(request: NextRequest) {
         experienceLevel,
         focusAreas: focusAreas || [],
         injuries: injuries || [],
+        injuryDetails,
+        otherActivities,
       },
     })
 
@@ -109,7 +113,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { age, birthDate, weight, trainingFrequency, experienceLevel, focusAreas, injuries } = body
+    const { age, birthDate, weight, trainingFrequency, experienceLevel, focusAreas, injuries, injuryDetails, otherActivities } = body
 
     // Update or create user profile
     const profile = await prisma.userProfile.upsert({
@@ -122,6 +126,8 @@ export async function PUT(request: NextRequest) {
         experienceLevel,
         focusAreas: focusAreas || [],
         injuries: injuries || [],
+        injuryDetails,
+        otherActivities,
       },
       create: {
         userId: user.id,
@@ -132,6 +138,8 @@ export async function PUT(request: NextRequest) {
         experienceLevel,
         focusAreas: focusAreas || [],
         injuries: injuries || [],
+        injuryDetails,
+        otherActivities,
       },
     })
 

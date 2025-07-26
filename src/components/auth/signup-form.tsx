@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
 import {
   Form,
   FormControl,
@@ -38,6 +39,8 @@ const signupSchema = z.object({
   experienceLevel: z.enum(["beginner", "intermediate", "advanced"]).optional(),
   focusAreas: z.array(z.enum(FOCUS_AREAS)).optional(),
   injuries: z.array(z.enum(COMMON_INJURIES)).optional(),
+  injuryDetails: z.string().max(1000, "Injury details must be less than 1000 characters").optional(),
+  otherActivities: z.string().max(500, "Other activities must be less than 500 characters").optional(),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",
   path: ["confirmPassword"],
@@ -61,6 +64,8 @@ export function SignupForm() {
       trainingFrequency: 3,
       focusAreas: [],
       injuries: [],
+      injuryDetails: undefined,
+      otherActivities: undefined,
     },
   })
 
@@ -98,6 +103,8 @@ export function SignupForm() {
               experienceLevel: data.experienceLevel,
               focusAreas: data.focusAreas || [],
               injuries: data.injuries || [],
+              injuryDetails: data.injuryDetails,
+              otherActivities: data.otherActivities,
             }),
           })
 
@@ -273,6 +280,28 @@ export function SignupForm() {
               </FormItem>
             )}
           />
+          
+          {/* Other Activities */}
+          <FormField
+            control={form.control}
+            name="otherActivities"
+            render={({ field }) => (
+              <FormItem className="mt-4">
+                <FormLabel>Other Sports & Activities (Optional)</FormLabel>
+                <FormDescription>
+                  List other physical activities you do regularly
+                </FormDescription>
+                <FormControl>
+                  <Textarea 
+                    placeholder="E.g., Running 3x per week, Swimming, Yoga, etc."
+                    className="min-h-[60px] resize-none"
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
         </div>
 
         {/* Focus Areas */}
@@ -354,6 +383,28 @@ export function SignupForm() {
                       </label>
                     ))}
                   </div>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          
+          {/* Injury Details */}
+          <FormField
+            control={form.control}
+            name="injuryDetails"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Injury Details (Optional)</FormLabel>
+                <FormDescription>
+                  Provide specific details about any injuries or limitations for personalized workout recommendations.
+                </FormDescription>
+                <FormControl>
+                  <Textarea 
+                    placeholder="E.g., Left knee issues - avoid deep squats. Right shoulder limitation - no overhead pressing."
+                    className="min-h-[80px] resize-none"
+                    {...field}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>

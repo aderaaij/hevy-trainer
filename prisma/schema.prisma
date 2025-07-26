@@ -25,6 +25,8 @@ model UserProfile {
   trainingFrequency Int?    // days per week
   focusAreas       String[] // e.g., ["strength", "hypertrophy", "endurance"]
   injuries         String[] // list of current injuries/limitations
+  injuryDetails    String?  @map("injury_details") // detailed injury information for AI context
+  otherActivities  String?  @map("other_activities") // other sports and activities with frequency
   experienceLevel  String?  // "beginner", "intermediate", "advanced"
   createdAt        DateTime @default(now()) @map("created_at")
   updatedAt        DateTime @updatedAt @map("updated_at")

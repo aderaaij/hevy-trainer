@@ -8,7 +8,7 @@ import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-// import { Textarea } from "@/components/ui/textarea" // Not used yet
+import { Textarea } from "@/components/ui/textarea"
 import {
   Select,
   SelectContent,
@@ -43,6 +43,8 @@ const profileSchema = z.object({
   experienceLevel: z.enum(["beginner", "intermediate", "advanced"]).optional(),
   focusAreas: z.array(z.enum(FOCUS_AREAS)).optional(),
   injuries: z.array(z.enum(COMMON_INJURIES)).optional(),
+  injuryDetails: z.string().max(1000, "Injury details must be less than 1000 characters").optional(),
+  otherActivities: z.string().max(500, "Other activities must be less than 500 characters").optional(),
 })
 
 type ProfileFormValues = z.infer<typeof profileSchema>
@@ -57,6 +59,8 @@ interface UserProfile {
   experienceLevel: string | null
   focusAreas: string[]
   injuries: string[]
+  injuryDetails: string | null
+  otherActivities: string | null
   createdAt: string
   updatedAt: string
 }
@@ -79,6 +83,8 @@ export function ProfileForm() {
       experienceLevel: undefined,
       focusAreas: [],
       injuries: [],
+      injuryDetails: undefined,
+      otherActivities: undefined,
     },
   })
 
@@ -105,6 +111,8 @@ export function ProfileForm() {
             experienceLevel: (profile.experienceLevel as "beginner" | "intermediate" | "advanced") || undefined,
             focusAreas: profile.focusAreas as typeof FOCUS_AREAS[number][],
             injuries: profile.injuries as typeof COMMON_INJURIES[number][],
+            injuryDetails: profile.injuryDetails || undefined,
+            otherActivities: profile.otherActivities || undefined,
           })
         } else if (response.status === 404) {
           // Profile doesn't exist yet - form will stay with default values
@@ -296,6 +304,28 @@ export function ProfileForm() {
                   )}
                 />
               </div>
+              
+              {/* Other Activities */}
+              <FormField
+                control={form.control}
+                name="otherActivities"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Other Sports & Activities</FormLabel>
+                    <FormDescription>
+                      List any other sports or physical activities you do regularly, including frequency and intensity.
+                    </FormDescription>
+                    <FormControl>
+                      <Textarea 
+                        placeholder="E.g., Running 3x per week (5-10km), Swimming 2x per week, Yoga daily, Basketball on weekends, Rock climbing once a week"
+                        className="min-h-[80px] resize-none"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </div>
 
             {/* Focus Areas */}
@@ -383,6 +413,28 @@ export function ProfileForm() {
                 )}
               />
             </div>
+
+            {/* Injury Details */}
+            <FormField
+              control={form.control}
+              name="injuryDetails"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Injury Details (Optional)</FormLabel>
+                  <FormDescription>
+                    Provide specific details about your injuries or limitations. Include which side (left/right), severity, restrictions, and how much this should factor into your workout recommendations.
+                  </FormDescription>
+                  <FormControl>
+                    <Textarea 
+                      placeholder="E.g., Left knee meniscus tear - avoid deep squats and high impact. Right shoulder impingement - limit overhead pressing. Please modify exercises significantly to work around these limitations."
+                      className="min-h-[100px] resize-none"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading ? (
