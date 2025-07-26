@@ -17,7 +17,7 @@ This is an AI-powered personal trainer web application that integrates with Hevy
 
 ```bash
 # Development
-npm run dev        # Start development server with Turbopack at http://localhost:3000
+npm run dev        # Start development server with Turbopack at http://localhost:3030
 
 # Production
 npm run build      # Create production build
@@ -35,17 +35,17 @@ npm run lint       # Run ESLint checks
 - **Framework**: Next.js 15.4.3 with App Router
 - **Language**: TypeScript with strict mode
 - **React**: Version 19.1.0
-- **UI Components**: Shadcn/ui (Radix primitives + Tailwind CSS) - to be installed
+- **UI Components**: Shadcn/ui (Radix primitives + Tailwind CSS) - ✅ **INSTALLED**
 - **Styling**: Tailwind CSS v4 (CSS-based configuration)
-- **Forms**: React Hook Form + Zod validation - to be installed
+- **Forms**: React Hook Form + Zod validation - ✅ **INSTALLED**
 - **State Management**: Zustand or Context API - to be implemented
-- **HTTP Client**: Axios for API calls - to be installed
+- **HTTP Client**: Axios for API calls - ✅ **INSTALLED**
 
 #### Backend
 - **API**: Next.js API Routes
-- **Database**: Supabase (PostgreSQL + Auth + Realtime) - to be configured
-- **ORM**: Prisma with Supabase - to be installed
-- **Authentication**: Supabase Auth
+- **Database**: Supabase (PostgreSQL + Auth + Realtime) - ✅ **CONFIGURED**
+- **ORM**: Prisma with Supabase - ✅ **INSTALLED & MIGRATED**
+- **Authentication**: Supabase Auth - ✅ **IMPLEMENTED**
 - **AI Integration**: OpenAI API (GPT-4)
 - **External API**: Hevy API integration
 
@@ -58,10 +58,43 @@ npm run lint       # Run ESLint checks
 ### Directory Structure
 ```
 src/
-└── app/              # Next.js App Router pages and layouts
-    ├── layout.tsx    # Root layout with HTML structure and fonts
-    ├── page.tsx      # Home page component
-    └── globals.css   # Global styles with Tailwind imports
+├── app/                          # Next.js App Router pages and layouts
+│   ├── auth/                     # Authentication pages
+│   │   ├── login/page.tsx        # Login page
+│   │   └── signup/page.tsx       # Signup page
+│   ├── dashboard/page.tsx        # Protected dashboard page
+│   ├── api/                      # API routes
+│   │   ├── auth/                 # Auth API routes
+│   │   │   ├── profile/route.ts  # User profile CRUD
+│   │   │   └── signout/route.ts  # Sign out endpoint
+│   │   └── hevy/                 # Hevy API proxy routes
+│   │       ├── workouts/         # Workout endpoints
+│   │       ├── routines/         # Routine endpoints
+│   │       ├── exercise-templates/ # Exercise template endpoints
+│   │       └── routine-folders/  # Routine folder endpoints
+│   ├── layout.tsx                # Root layout with HTML structure and fonts
+│   ├── page.tsx                  # Home page with auth navigation
+│   └── globals.css               # Global styles with Tailwind imports
+├── components/                   # Reusable UI components
+│   ├── auth/                     # Authentication components
+│   │   ├── login-form.tsx        # Login form with validation
+│   │   └── signup-form.tsx       # Signup form with user profile
+│   ├── ui/                       # Shadcn/ui components
+│   └── test-*/                   # API testing components
+├── lib/                          # Utility libraries
+│   ├── supabase/                 # Supabase client utilities
+│   │   ├── client.ts             # Browser client
+│   │   ├── server.ts             # Server client
+│   │   ├── middleware.ts         # Session management
+│   │   └── types.ts              # Auth types
+│   ├── hevy/                     # Hevy API integration
+│   │   ├── client.ts             # HTTP client (proxied)
+│   │   ├── services/             # API service layer
+│   │   └── types/                # TypeScript definitions
+│   └── analysis/                 # Workout analysis tools
+├── generated/prisma/             # Generated Prisma client
+├── middleware.ts                 # Next.js middleware for auth
+└── types/                        # Shared TypeScript types
 ```
 
 ### Key Architectural Decisions
@@ -70,6 +103,9 @@ src/
 3. **Path Aliases**: Use `@/` to import from `src/` directory
 4. **Fonts**: Geist Sans and Geist Mono fonts are configured via `next/font`
 5. **Tailwind v4**: Using the new PostCSS-based Tailwind configuration (no config file needed)
+6. **Authentication**: Server-side session management with middleware for all routes
+7. **Database**: Prisma ORM with Supabase PostgreSQL, generated client in `src/generated/prisma`
+8. **Security**: All API keys server-side only, proxy architecture for external APIs
 
 ## Development Guidelines
 
@@ -93,13 +129,53 @@ src/
 
 1. **Turbopack**: Development server uses Turbopack for faster builds
 2. **No Test Setup**: No testing framework is currently configured
-3. **Environment Variables**: Use `.env.local` for local environment variables (create if needed)
+3. **Environment Variables**: Use `.env.local` for local environment variables
 4. **Required Environment Variables**:
    - `OPENAI_API_KEY` - For GPT-4 integration (server-side only)
    - `NEXT_PUBLIC_SUPABASE_URL` - Supabase project URL
-   - `NEXT_PUBLIC_SUPABASE_ANON_KEY` - Supabase anonymous key
-   - `SUPABASE_SERVICE_ROLE_KEY` - Supabase service role key (server-side only)
+   - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY` - Supabase publishable key (replaces anon key)
+   - `SUPABASE_SECRET_KEY` - Supabase secret key (server-side only)
    - `HEVY_API_KEY` - Hevy API key for workout data integration (server-side only, DO NOT prefix with NEXT_PUBLIC_)
+   - `DATABASE_URL` - PostgreSQL connection string for Prisma (pooled)
+   - `DIRECT_URL` - PostgreSQL direct connection string for migrations
+
+## Database Schema
+
+The application uses PostgreSQL via Supabase with the following tables:
+
+### Core Tables
+
+#### `user_profiles`
+- **Purpose**: Extends Supabase auth.users with fitness-specific data
+- **Key Fields**: `userId` (FK to auth.users), `age`, `weight`, `trainingFrequency`, `focusAreas[]`, `injuries[]`, `experienceLevel`
+- **Relations**: One-to-many with workouts, routines, and analyses
+
+#### `imported_workouts`
+- **Purpose**: Stores workout data imported from Hevy API
+- **Key Fields**: `hevyWorkoutId` (unique), `workoutData` (JSONB), `performedAt`, `name`
+- **Relations**: Belongs to user_profiles via `userId`
+
+#### `generated_routines`
+- **Purpose**: AI-generated workout routines for users
+- **Key Fields**: `routineData` (JSONB), `aiContext` (JSONB), `hevyRoutineId`, `exportedToHevy`
+- **Relations**: Belongs to user_profiles via `userId`
+
+#### `training_analyses`
+- **Purpose**: Stores workout analysis results from the simplified analyzer
+- **Key Fields**: `analysisData` (JSONB), `periodStart`, `periodEnd`
+- **Relations**: Belongs to user_profiles via `userId`
+
+### Schema Management
+```bash
+# Generate Prisma client after schema changes
+npx prisma generate
+
+# Create and apply migrations
+npx prisma migrate dev --name description
+
+# Reset database (development only)
+npx prisma migrate reset
+```
 
 ## API Integrations
 
@@ -174,17 +250,38 @@ export default function InteractiveComponent() {
 }
 ```
 
-### Setting up Supabase Client
+### Database Operations with Prisma
 ```typescript
-// src/lib/supabase/client.ts
-import { createBrowserClient } from '@supabase/ssr'
+// Import Prisma client
+import { PrismaClient } from '@/generated/prisma'
 
-export function createClient() {
-  return createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
-}
+const prisma = new PrismaClient()
+
+// Example: Create user profile
+await prisma.userProfile.create({
+  data: {
+    userId: user.id,
+    age: 25,
+    weight: 70,
+    trainingFrequency: 4,
+    experienceLevel: 'intermediate'
+  }
+})
+```
+
+### Authentication with Supabase
+```typescript
+// Browser client
+import { createClient } from '@/lib/supabase/client'
+const supabase = createClient()
+
+// Server client (for API routes and Server Components)
+import { createClient } from '@/lib/supabase/server'
+const supabase = await createClient()
+
+// Check authentication
+const { data: { user } } = await supabase.auth.getUser()
+if (!user) redirect('/auth/login')
 ```
 
 ### Integrating with OpenAI

@@ -1,0 +1,90 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// User profile extending Supabase auth.users
+model UserProfile {
+  id               String   @id @default(cuid())
+  userId           String   @unique @map("user_id") // References auth.users.id
+  age              Int?
+  weight           Float?   // in kg
+  trainingFrequency Int?    // days per week
+  focusAreas       String[] // e.g., ["strength", "hypertrophy", "endurance"]
+  injuries         String[] // list of current injuries/limitations
+  experienceLevel  String?  // "beginner", "intermediate", "advanced"
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  importedWorkouts ImportedWorkout[]
+  generatedRoutines GeneratedRoutine[]
+  trainingAnalyses TrainingAnalysis[]
+
+  @@map("user_profiles")
+}
+
+// Store imported workouts from Hevy
+model ImportedWorkout {
+  id             String   @id @default(cuid())
+  userId         String   @map("user_id")
+  hevyWorkoutId  String   @unique @map("hevy_workout_id")
+  workoutData    Json     @map("workout_data") // Full workout data from Hevy API
+  name           String
+  performedAt    DateTime @map("performed_at")
+  importedAt     DateTime @default(now()) @map("imported_at")
+  
+  // Relations
+  userProfile UserProfile @relation(fields: [userId], references: [userId], onDelete: Cascade)
+
+  @@index([userId, performedAt])
+  @@map("imported_workouts")
+}
+
+// Store AI-generated routines
+model GeneratedRoutine {
+  id             String   @id @default(cuid())
+  userId         String   @map("user_id")
+  name           String
+  description    String?
+  routineData    Json     @map("routine_data") // Complete routine structure
+  aiContext      Json?    @map("ai_context") // Context used for generation
+  hevyRoutineId  String?  @map("hevy_routine_id") // ID if exported to Hevy
+  exportedToHevy Boolean  @default(false) @map("exported_to_hevy")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  userProfile UserProfile @relation(fields: [userId], references: [userId], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@map("generated_routines")
+}
+
+// Store training analyses from the simplified analyzer
+model TrainingAnalysis {
+  id            String   @id @default(cuid())
+  userId        String   @map("user_id")
+  periodStart   DateTime @map("period_start")
+  periodEnd     DateTime @map("period_end")
+  analysisData  Json     @map("analysis_data") // SimplifiedAnalysis data
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  // Relations
+  userProfile UserProfile @relation(fields: [userId], references: [userId], onDelete: Cascade)
+
+  @@index([userId, periodStart])
+  @@map("training_analyses")
+}

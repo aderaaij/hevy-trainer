@@ -6,12 +6,44 @@ import TestSimplifiedAnalyzer from "@/components/test-simplified-analyzer";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
+import { createClient } from "@/lib/supabase/server";
 
-export default function Home() {
+export default async function Home() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto py-8 px-4">
         <div className="mb-8 text-center">
+          <div className="flex justify-end mb-4">
+            {user ? (
+              <div className="flex items-center gap-4">
+                <span className="text-sm text-muted-foreground">
+                  {user.email}
+                </span>
+                <Link href="/dashboard">
+                  <Button variant="outline">Dashboard</Button>
+                </Link>
+                <form action="/api/auth/signout" method="POST">
+                  <Button type="submit" variant="ghost">
+                    Sign out
+                  </Button>
+                </form>
+              </div>
+            ) : (
+              <div className="flex gap-2">
+                <Link href="/auth/login">
+                  <Button variant="ghost">Sign in</Button>
+                </Link>
+                <Link href="/auth/signup">
+                  <Button>Get started</Button>
+                </Link>
+              </div>
+            )}
+          </div>
           <h1 className="text-4xl font-bold tracking-tight mb-2">
             AI Personal Trainer
           </h1>
