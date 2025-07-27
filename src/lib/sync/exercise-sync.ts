@@ -1,0 +1,174 @@
+import { PrismaClient } from '@/generated/prisma'
+import { hevyServerClient } from '@/app/api/hevy/lib/hevy-server-client'
+import { ExerciseTemplate, HevyExerciseTemplatesResponse } from '@/lib/hevy/types/exercise-templates'
+
+const prisma = new PrismaClient()
+
+interface SyncResult {
+  synced: number
+  failed: number
+  errors: Array<{ exerciseId: string; error: string }>
+}
+
+export class ExerciseSyncService {
+  private userId: string
+
+  constructor(userId: string) {
+    this.userId = userId
+  }
+
+  /**
+   * Sync all exercise templates for a user
+   */
+  async syncAllExercises(): Promise<SyncResult> {
+    const result: SyncResult = {
+      synced: 0,
+      failed: 0,
+      errors: []
+    }
+
+    try {
+      // Create sync status record
+      const syncStatus = await prisma.syncStatus.create({
+        data: {
+          userId: this.userId,
+          syncType: 'exercises',
+          status: 'in_progress',
+        }
+      })
+
+      // Fetch all exercise templates (pagination if needed)
+      let page = 1
+      let hasMore = true
+
+      while (hasMore) {
+        try {
+          const exercisesResponse = await hevyServerClient.get<HevyExerciseTemplatesResponse>(
+            `/exercise-templates?page=${page}&pageSize=50`
+          )
+
+          const exercises = exercisesResponse.exercise_templates || []
+          
+          // Process each exercise template
+          for (const exercise of exercises) {
+            try {
+              await this.syncSingleExercise(exercise)
+              result.synced++
+              
+              // Update progress
+              await prisma.syncStatus.update({
+                where: { id: syncStatus.id },
+                data: { itemsSynced: result.synced }
+              })
+            } catch (error) {
+              result.failed++
+              result.errors.push({
+                exerciseId: exercise.id,
+                error: error instanceof Error ? error.message : 'Unknown error'
+              })
+            }
+          }
+
+          // Check if there are more pages
+          hasMore = exercises.length === 50
+          page++
+
+          // Add delay to avoid rate limiting
+          await new Promise(resolve => setTimeout(resolve, 100))
+        } catch (error) {
+          console.error(`Error fetching exercises page ${page}:`, error)
+          hasMore = false
+        }
+      }
+
+      // Update sync status to completed
+      await prisma.syncStatus.update({
+        where: { id: syncStatus.id },
+        data: {
+          status: result.failed === 0 ? 'completed' : 'completed_with_errors',
+          completedAt: new Date(),
+          itemsSynced: result.synced,
+          totalItems: result.synced + result.failed,
+          errorMessage: result.failed > 0 ? 
+            `Failed to sync ${result.failed} exercises` : null,
+          metadata: result.errors.length > 0 ? result.errors : null
+        }
+      })
+
+    } catch (error) {
+      console.error('Exercise sync failed:', error)
+      throw error
+    }
+
+    return result
+  }
+
+  /**
+   * Sync a single exercise template
+   */
+  private async syncSingleExercise(exercise: ExerciseTemplate): Promise<void> {
+    // Get full exercise details if needed
+    let fullExercise = exercise
+    
+    // If we need more details, fetch them
+    if (!exercise.muscle_group) {
+      try {
+        fullExercise = await hevyServerClient.get<ExerciseTemplate>(`/exercise-templates/${exercise.id}`)
+      } catch (error) {
+        // If fetching full details fails, use what we have
+        console.warn(`Failed to fetch full details for exercise ${exercise.id}`)
+      }
+    }
+
+    // Upsert exercise template to database
+    await prisma.importedExerciseTemplate.upsert({
+      where: { hevyExerciseId: exercise.id },
+      update: {
+        exerciseTemplateData: fullExercise as any,
+        name: fullExercise.name,
+        muscleGroup: fullExercise.muscle_group || null,
+        exerciseType: fullExercise.equipment_category || 'other',
+        isCustom: fullExercise.is_custom || false,
+        lastSyncedAt: new Date()
+      },
+      create: {
+        userId: this.userId,
+        hevyExerciseId: exercise.id,
+        exerciseTemplateData: fullExercise as any,
+        name: fullExercise.name,
+        muscleGroup: fullExercise.muscle_group || null,
+        exerciseType: fullExercise.equipment_category || 'other',
+        isCustom: fullExercise.is_custom || false
+      }
+    })
+  }
+
+  /**
+   * Get sync status for exercises
+   */
+  async getSyncStatus() {
+    const latestSync = await prisma.syncStatus.findFirst({
+      where: { 
+        userId: this.userId,
+        syncType: 'exercises'
+      },
+      orderBy: { startedAt: 'desc' }
+    })
+
+    const exerciseCount = await prisma.importedExerciseTemplate.count({
+      where: { userId: this.userId }
+    })
+
+    const lastExerciseSync = await prisma.importedExerciseTemplate.findFirst({
+      where: { userId: this.userId },
+      orderBy: { lastSyncedAt: 'desc' },
+      select: { lastSyncedAt: true }
+    })
+
+    return {
+      latestSync,
+      totalExercisesCached: exerciseCount,
+      lastSyncedAt: lastExerciseSync?.lastSyncedAt
+    }
+  }
+}

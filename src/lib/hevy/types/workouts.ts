@@ -56,14 +56,14 @@ export interface WorkoutEventsFilters {
 
 // Workout count response
 export interface WorkoutCountResponse {
-  count: number;
+  workout_count: number;
 }
 
 // Workout events response
 export interface HevyWorkoutEventsResponse {
   page: number;
   page_count: number;
-  workout_events: WorkoutEvent[];
+  workout_dates: string[]; // Array of date strings when workouts occurred
 }
 
 export interface WorkoutEvent {

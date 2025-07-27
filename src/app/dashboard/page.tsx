@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { User, Settings, Home } from "lucide-react"
+import { SyncStatus } from "@/components/sync/sync-status"
 
 export default async function DashboardPage() {
   const supabase = await createClient()
@@ -50,6 +51,9 @@ export default async function DashboardPage() {
             </Link>
           </div>
         </div>
+        
+        {/* Sync Status */}
+        <SyncStatus />
         
         <div className="grid md:grid-cols-3 gap-6">
           <div className="p-6 bg-white dark:bg-neutral-800 rounded-lg shadow">

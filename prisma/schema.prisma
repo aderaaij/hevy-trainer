@@ -28,13 +28,18 @@ model UserProfile {
   injuryDetails    String?  @map("injury_details") // detailed injury information for AI context
   otherActivities  String?  @map("other_activities") // other sports and activities with frequency
   experienceLevel  String?  // "beginner", "intermediate", "advanced"
+  hevyApiKey       String?  @map("hevy_api_key") // Encrypted Hevy API key
+  lastHevySync     DateTime? @map("last_hevy_sync") // Last successful Hevy sync
   createdAt        DateTime @default(now()) @map("created_at")
   updatedAt        DateTime @updatedAt @map("updated_at")
 
   // Relations
   importedWorkouts ImportedWorkout[]
+  importedRoutines ImportedRoutine[]
+  importedExerciseTemplates ImportedExerciseTemplate[]
   generatedRoutines GeneratedRoutine[]
   trainingAnalyses TrainingAnalysis[]
+  syncStatus SyncStatus[]
 
   @@map("user_profiles")
 }
@@ -48,11 +53,13 @@ model ImportedWorkout {
   name           String
   performedAt    DateTime @map("performed_at")
   importedAt     DateTime @default(now()) @map("imported_at")
+  lastSyncedAt   DateTime @default(now()) @map("last_synced_at")
   
   // Relations
   userProfile UserProfile @relation(fields: [userId], references: [userId], onDelete: Cascade)
 
   @@index([userId, performedAt])
+  @@index([userId, lastSyncedAt])
   @@map("imported_workouts")
 }
 
@@ -90,4 +97,65 @@ model TrainingAnalysis {
 
   @@index([userId, periodStart])
   @@map("training_analyses")
+}
+
+// Store imported routines from Hevy
+model ImportedRoutine {
+  id             String   @id @default(cuid())
+  userId         String   @map("user_id")
+  hevyRoutineId  String   @unique @map("hevy_routine_id")
+  routineData    Json     @map("routine_data") // Full routine data from Hevy API
+  name           String
+  folderId       String?  @map("folder_id") // Hevy folder ID
+  isArchived     Boolean  @default(false) @map("is_archived")
+  importedAt     DateTime @default(now()) @map("imported_at")
+  lastSyncedAt   DateTime @default(now()) @map("last_synced_at")
+  
+  // Relations
+  userProfile UserProfile @relation(fields: [userId], references: [userId], onDelete: Cascade)
+
+  @@index([userId, name])
+  @@index([userId, lastSyncedAt])
+  @@map("imported_routines")
+}
+
+// Store imported exercise templates from Hevy
+model ImportedExerciseTemplate {
+  id                    String   @id @default(cuid())
+  userId                String   @map("user_id")
+  hevyExerciseId        String   @unique @map("hevy_exercise_id")
+  exerciseTemplateData  Json     @map("exercise_template_data") // Full template data
+  name                  String
+  muscleGroup           String?  @map("muscle_group")
+  exerciseType          String   @map("exercise_type") // barbell, dumbbell, machine, etc.
+  isCustom              Boolean  @default(false) @map("is_custom")
+  importedAt            DateTime @default(now()) @map("imported_at")
+  lastSyncedAt          DateTime @default(now()) @map("last_synced_at")
+  
+  // Relations
+  userProfile UserProfile @relation(fields: [userId], references: [userId], onDelete: Cascade)
+
+  @@index([userId, name])
+  @@index([userId, muscleGroup])
+  @@map("imported_exercise_templates")
+}
+
+// Track sync status and history
+model SyncStatus {
+  id            String   @id @default(cuid())
+  userId        String   @map("user_id")
+  syncType      String   @map("sync_type") // "workouts", "routines", "exercises", "full"
+  status        String   // "pending", "in_progress", "completed", "failed"
+  startedAt     DateTime @default(now()) @map("started_at")
+  completedAt   DateTime? @map("completed_at")
+  itemsSynced   Int      @default(0) @map("items_synced")
+  totalItems    Int?     @map("total_items")
+  errorMessage  String?  @map("error_message")
+  metadata      Json?    // Additional sync metadata
+  
+  // Relations
+  userProfile UserProfile @relation(fields: [userId], references: [userId], onDelete: Cascade)
+
+  @@index([userId, syncType, startedAt])
+  @@map("sync_status")
 }

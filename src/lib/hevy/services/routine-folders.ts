@@ -27,7 +27,7 @@ export class RoutineFolderService {
     }
 
     const queryString = params.toString();
-    const url = queryString ? `/routine_folders?${queryString}` : '/routine_folders';
+    const url = queryString ? `/routine-folders?${queryString}` : '/routine-folders';
     
     return hevyApiClient.get<HevyRoutineFoldersResponse>(url);
   }
@@ -37,7 +37,7 @@ export class RoutineFolderService {
    * @param id - The routine folder ID
    */
   async getRoutineFolder(id: string): Promise<RoutineFolder> {
-    return hevyApiClient.get<RoutineFolder>(`/routine_folders/${id}`);
+    return hevyApiClient.get<RoutineFolder>(`/routine-folders/${id}`);
   }
 
   /**
@@ -45,7 +45,7 @@ export class RoutineFolderService {
    * @param folder - The routine folder data to create
    */
   async createRoutineFolder(folder: CreateRoutineFolderRequest): Promise<RoutineFolder> {
-    return hevyApiClient.post<RoutineFolder>('/routine_folders', folder);
+    return hevyApiClient.post<RoutineFolder>('/routine-folders', folder);
   }
 
   // Helper methods

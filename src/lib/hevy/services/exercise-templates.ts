@@ -26,7 +26,7 @@ export class ExerciseTemplateService {
     }
 
     const queryString = params.toString();
-    const url = queryString ? `/exercise_templates?${queryString}` : '/exercise_templates';
+    const url = queryString ? `/exercise-templates?${queryString}` : '/exercise-templates';
     
     return hevyApiClient.get<HevyExerciseTemplatesResponse>(url);
   }
@@ -36,7 +36,7 @@ export class ExerciseTemplateService {
    * @param id - The exercise template ID
    */
   async getExerciseTemplate(id: string): Promise<ExerciseTemplate> {
-    return hevyApiClient.get<ExerciseTemplate>(`/exercise_templates/${id}`);
+    return hevyApiClient.get<ExerciseTemplate>(`/exercise-templates/${id}`);
   }
 
   /**
