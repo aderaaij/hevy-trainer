@@ -1,5 +1,6 @@
 import { WorkoutSyncService } from './workout-sync'
 import { RoutineSyncService } from './routine-sync'
+import { RoutineFolderSyncService } from './routine-folder-sync'
 import { ExerciseSyncService } from './exercise-sync'
 import { PrismaClient } from '@/generated/prisma'
 
@@ -8,6 +9,7 @@ const prisma = new PrismaClient()
 export interface FullSyncResult {
   workouts: { synced: number; failed: number }
   routines: { synced: number; failed: number }
+  routineFolders: { synced: number; failed: number }
   exercises: { synced: number; failed: number }
   totalSynced: number
   totalFailed: number
@@ -18,12 +20,14 @@ export class HevySyncService {
   private userId: string
   private workoutSync: WorkoutSyncService
   private routineSync: RoutineSyncService
+  private routineFolderSync: RoutineFolderSyncService
   private exerciseSync: ExerciseSyncService
 
   constructor(userId: string) {
     this.userId = userId
     this.workoutSync = new WorkoutSyncService(userId)
     this.routineSync = new RoutineSyncService(userId)
+    this.routineFolderSync = new RoutineFolderSyncService(userId)
     this.exerciseSync = new ExerciseSyncService(userId)
   }
 
@@ -31,8 +35,6 @@ export class HevySyncService {
    * Perform a full sync of all data
    */
   async fullSync(): Promise<FullSyncResult> {
-    const startTime = Date.now()
-    console.log(`Starting full sync for user ${this.userId}`)
     
     // Create master sync status
     const masterSync = await prisma.syncStatus.create({
@@ -42,11 +44,11 @@ export class HevySyncService {
         status: 'in_progress',
       }
     })
-    console.log(`Created master sync status with ID: ${masterSync.id}`)
 
     const result: FullSyncResult = {
       workouts: { synced: 0, failed: 0 },
       routines: { synced: 0, failed: 0 },
+      routineFolders: { synced: 0, failed: 0 },
       exercises: { synced: 0, failed: 0 },
       totalSynced: 0,
       totalFailed: 0,
@@ -55,29 +57,31 @@ export class HevySyncService {
 
     try {
       // Sync exercises first (needed for workouts and routines)
-      console.log('Syncing exercises...')
       const exerciseResult = await this.exerciseSync.syncAllExercises()
       result.exercises = exerciseResult
-      console.log(`Exercise sync completed: ${exerciseResult.synced} synced, ${exerciseResult.failed} failed`)
+
+      // Sync routine folders (needed for routines)
+      const folderResult = await this.routineFolderSync.syncAllRoutineFolders()
+      result.routineFolders = folderResult
 
       // Sync routines
-      console.log('Syncing routines...')
       const routineResult = await this.routineSync.syncAllRoutines()
       result.routines = routineResult
 
       // Sync workouts (most data intensive, do last)
-      console.log('Syncing workouts...')
       const workoutResult = await this.workoutSync.syncAllWorkouts()
       result.workouts = workoutResult
 
       // Calculate totals
       result.totalSynced = 
         result.exercises.synced + 
+        result.routineFolders.synced +
         result.routines.synced + 
         result.workouts.synced
       
       result.totalFailed = 
         result.exercises.failed + 
+        result.routineFolders.failed +
         result.routines.failed + 
         result.workouts.failed
 
@@ -93,7 +97,7 @@ export class HevySyncService {
           totalItems: result.totalSynced + result.totalFailed,
           errorMessage: result.totalFailed > 0 ? 
             `Failed to sync ${result.totalFailed} items` : null,
-          metadata: result as any
+          metadata: result
         }
       })
 
@@ -117,7 +121,6 @@ export class HevySyncService {
    * Perform an incremental sync (only new/updated data)
    */
   async incrementalSync(): Promise<{ workouts: any }> {
-    const startTime = Date.now()
     
     // For now, only workouts support incremental sync
     const workoutResult = await this.workoutSync.syncIncrementalWorkouts()
@@ -133,6 +136,7 @@ export class HevySyncService {
   async getOverallSyncStatus() {
     const workoutStatus = await this.workoutSync.getSyncStatus()
     const routineStatus = await this.routineSync.getSyncStatus()
+    const folderStatus = await this.routineFolderSync.getSyncStatus()
     const exerciseStatus = await this.exerciseSync.getSyncStatus()
 
     // Get most recent full sync
@@ -154,6 +158,7 @@ export class HevySyncService {
     return {
       workouts: workoutStatus,
       routines: routineStatus,
+      routineFolders: folderStatus,
       exercises: exerciseStatus,
       lastFullSync,
       isStale,

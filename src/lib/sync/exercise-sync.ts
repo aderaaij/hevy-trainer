@@ -18,7 +18,7 @@ export class ExerciseSyncService {
   }
 
   /**
-   * Sync all exercise templates for a user
+   * Sync all exercise templates for a user (incremental - only missing/updated)
    */
   async syncAllExercises(): Promise<SyncResult> {
     const result: SyncResult = {
@@ -37,20 +37,40 @@ export class ExerciseSyncService {
         }
       })
 
-      // Fetch all exercise templates (pagination if needed)
-      let page = 1
-      let hasMore = true
+      // Get existing exercise IDs from database
+      const existingExercises = await prisma.importedExerciseTemplate.findMany({
+        where: { userId: this.userId },
+        select: { hevyExerciseId: true }
+      })
+      const existingExerciseIds = new Set(existingExercises.map(e => e.hevyExerciseId))
 
-      while (hasMore) {
+      // Fetch all exercise templates (API handles pagination automatically)
+      let page = 1
+
+      // Try to get first response to determine pagination
+      let totalPages = 1
+      
+      while (page <= totalPages) {
         try {
-          const exercisesResponse = await hevyServerClient.get<HevyExerciseTemplatesResponse>(
-            `/exercise-templates?page=${page}&pageSize=50`
-          )
+          
+          // Use the API's built-in pagination - don't specify page size
+          const url = page === 1 ? '/exercise_templates' : `/exercise_templates?page=${page}`
+          const exercisesResponse = await hevyServerClient.get<HevyExerciseTemplatesResponse>(url)
+
+          // Update total pages from first response
+          if (page === 1) {
+            totalPages = exercisesResponse.page_count || 1
+          }
 
           const exercises = exercisesResponse.exercise_templates || []
           
-          // Process each exercise template
+          // Process each exercise template, but only sync if not already cached
           for (const exercise of exercises) {
+            // Skip if exercise already exists
+            if (existingExerciseIds.has(exercise.id)) {
+              continue
+            }
+
             try {
               await this.syncSingleExercise(exercise)
               result.synced++
@@ -69,17 +89,16 @@ export class ExerciseSyncService {
             }
           }
 
-          // Check if there are more pages
-          hasMore = exercises.length === 50
           page++
 
           // Add delay to avoid rate limiting
           await new Promise(resolve => setTimeout(resolve, 100))
         } catch (error) {
           console.error(`Error fetching exercises page ${page}:`, error)
-          hasMore = false
+          break
         }
       }
+
 
       // Update sync status to completed
       await prisma.syncStatus.update({
@@ -111,12 +130,11 @@ export class ExerciseSyncService {
     let fullExercise = exercise
     
     // If we need more details, fetch them
-    if (!exercise.muscle_group) {
+    if (!exercise.primary_muscle_group) {
       try {
-        fullExercise = await hevyServerClient.get<ExerciseTemplate>(`/exercise-templates/${exercise.id}`)
-      } catch (error) {
+        fullExercise = await hevyServerClient.get<ExerciseTemplate>(`/exercise_templates/${exercise.id}`)
+      } catch {
         // If fetching full details fails, use what we have
-        console.warn(`Failed to fetch full details for exercise ${exercise.id}`)
       }
     }
 
@@ -124,20 +142,20 @@ export class ExerciseSyncService {
     await prisma.importedExerciseTemplate.upsert({
       where: { hevyExerciseId: exercise.id },
       update: {
-        exerciseTemplateData: fullExercise as any,
-        name: fullExercise.name,
-        muscleGroup: fullExercise.muscle_group || null,
-        exerciseType: fullExercise.equipment_category || 'other',
+        exerciseTemplateData: fullExercise,
+        name: fullExercise.title,
+        muscleGroup: fullExercise.primary_muscle_group || null,
+        exerciseType: fullExercise.equipment || 'other',
         isCustom: fullExercise.is_custom || false,
         lastSyncedAt: new Date()
       },
       create: {
         userId: this.userId,
         hevyExerciseId: exercise.id,
-        exerciseTemplateData: fullExercise as any,
-        name: fullExercise.name,
-        muscleGroup: fullExercise.muscle_group || null,
-        exerciseType: fullExercise.equipment_category || 'other',
+        exerciseTemplateData: fullExercise,
+        name: fullExercise.title,
+        muscleGroup: fullExercise.primary_muscle_group || null,
+        exerciseType: fullExercise.equipment || 'other',
         isCustom: fullExercise.is_custom || false
       }
     })

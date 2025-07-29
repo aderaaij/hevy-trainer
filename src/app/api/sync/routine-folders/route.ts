@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { HevySyncService } from '@/lib/sync/sync-service'
+import { RoutineFolderSyncService } from '@/lib/sync/routine-folder-sync'
 
 export async function POST(_request: NextRequest) {
   try {
@@ -24,32 +24,26 @@ export async function POST(_request: NextRequest) {
       }, { status: 500 })
     }
 
-    // Create sync service
-    const syncService = new HevySyncService(user.id)
+    // Create routine folder sync service
+    const folderSync = new RoutineFolderSyncService(user.id)
 
-    // Check if sync is already in progress
-    if (await syncService.isSyncInProgress()) {
-      return NextResponse.json(
-        { error: 'Sync already in progress' },
-        { status: 409 }
-      )
-    }
-
-    // Start full sync in background (don't await)
-    // In production, you'd want to use a queue system like BullMQ
-    syncService.fullSync().catch(error => {
-      console.error('Background sync failed:', error)
-    })
+    // Start routine folder sync
+    const result = await folderSync.syncAllRoutineFolders()
 
     return NextResponse.json({
       success: true,
-      message: 'Full sync started in background'
+      message: 'Routine folder sync completed',
+      result: {
+        synced: result.synced,
+        failed: result.failed,
+        errors: result.errors
+      }
     })
 
   } catch (error) {
-    console.error('Full sync error:', error)
+    console.error('Routine folder sync error:', error)
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to start sync' },
+      { error: error instanceof Error ? error.message : 'Failed to sync routine folders' },
       { status: 500 }
     )
   }

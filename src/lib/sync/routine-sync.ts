@@ -18,7 +18,7 @@ export class RoutineSyncService {
   }
 
   /**
-   * Sync all routines for a user
+   * Sync all routines for a user (incremental - only missing/updated)
    */
   async syncAllRoutines(): Promise<SyncResult> {
     const result: SyncResult = {
@@ -37,20 +37,40 @@ export class RoutineSyncService {
         }
       })
 
-      // Fetch all routines (pagination if needed)
-      let page = 1
-      let hasMore = true
+      // Get existing routine IDs from database
+      const existingRoutines = await prisma.importedRoutine.findMany({
+        where: { userId: this.userId },
+        select: { hevyRoutineId: true }
+      })
+      const existingRoutineIds = new Set(existingRoutines.map(r => r.hevyRoutineId))
 
-      while (hasMore) {
+      // Fetch all routines (API handles pagination automatically)
+      let page = 1
+
+      // Try to get first response to determine pagination
+      let totalPages = 1
+      
+      while (page <= totalPages) {
         try {
-          const routinesResponse = await hevyServerClient.get<RoutinesResponse>(
-            `/routines?page=${page}&pageSize=20`
-          )
+          
+          // Use the API's built-in pagination - don't specify page size
+          const url = page === 1 ? '/routines' : `/routines?page=${page}`
+          const routinesResponse = await hevyServerClient.get<RoutinesResponse>(url)
+
+          // Update total pages from first response
+          if (page === 1) {
+            totalPages = routinesResponse.page_count || 1
+          }
 
           const routines = routinesResponse.routines || []
           
-          // Process each routine
+          // Process each routine, but only sync if not already cached
           for (const routine of routines) {
+            // Skip if routine already exists
+            if (existingRoutineIds.has(String(routine.id))) {
+              continue
+            }
+
             try {
               await this.syncSingleRoutine(routine)
               result.synced++
@@ -61,6 +81,7 @@ export class RoutineSyncService {
                 data: { itemsSynced: result.synced }
               })
             } catch (error) {
+              console.error(`Failed to sync routine ${routine.id}:`, error)
               result.failed++
               result.errors.push({
                 routineId: routine.id,
@@ -69,17 +90,16 @@ export class RoutineSyncService {
             }
           }
 
-          // Check if there are more pages
-          hasMore = routines.length === 20
           page++
 
           // Add delay to avoid rate limiting
           await new Promise(resolve => setTimeout(resolve, 100))
         } catch (error) {
           console.error(`Error fetching routines page ${page}:`, error)
-          hasMore = false
+          break
         }
       }
+
 
       // Update sync status to completed
       await prisma.syncStatus.update({
@@ -107,28 +127,58 @@ export class RoutineSyncService {
    * Sync a single routine
    */
   private async syncSingleRoutine(routine: Routine): Promise<void> {
-    // Get full routine details
-    const fullRoutine = await hevyServerClient.get<Routine>(`/routines/${routine.id}`)
+    try {
+      // Get full routine details
+      const fullRoutine = await hevyServerClient.get<Routine>(`/routines/${routine.id}`)
+      
 
-    // Upsert routine to database
-    await prisma.importedRoutine.upsert({
-      where: { hevyRoutineId: routine.id },
-      update: {
-        routineData: fullRoutine as any, // Store full routine data as JSON
-        name: fullRoutine.name,
-        folderId: fullRoutine.folder_id || null,
-        isArchived: fullRoutine.is_archived || false,
-        lastSyncedAt: new Date()
-      },
-      create: {
-        userId: this.userId,
-        hevyRoutineId: routine.id,
-        routineData: fullRoutine as any,
-        name: fullRoutine.name,
-        folderId: fullRoutine.folder_id || null,
-        isArchived: fullRoutine.is_archived || false
+      // Check if the folder exists if folderId is provided
+      let folderId = null
+      if (fullRoutine.folder_id) {
+        const folderIdString = String(fullRoutine.folder_id)
+        const folderExists = await prisma.importedRoutineFolder.findUnique({
+          where: { hevyFolderId: folderIdString }
+        })
+        
+        if (folderExists) {
+          folderId = folderIdString
+        } else {
+        }
       }
-    })
+
+      // Prepare the data with proper defaults
+      const routineData = {
+        userId: this.userId,
+        hevyRoutineId: String(routine.id),
+        routineData: fullRoutine,
+        name: fullRoutine.title || fullRoutine.name || 'Untitled Routine',
+        folderId,
+        isArchived: Boolean(fullRoutine.is_archived)
+      }
+
+
+      // Upsert routine to database
+      try {
+        await prisma.importedRoutine.upsert({
+          where: { hevyRoutineId: String(routine.id) },
+          update: {
+            routineData: routineData.routineData,
+            name: routineData.name,
+            folderId: routineData.folderId,
+            isArchived: routineData.isArchived,
+            lastSyncedAt: new Date()
+          },
+          create: routineData
+        })
+      } catch (prismaError) {
+        console.error(`Failed to upsert routine ${routine.id}:`, prismaError?.message || prismaError)
+        throw prismaError
+      }
+      
+    } catch (error) {
+      console.error(`Error syncing routine ${routine.id}:`, error?.message || error)
+      throw error
+    }
   }
 
   /**

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { HevySyncService } from '@/lib/sync/sync-service'
+import { RoutineSyncService } from '@/lib/sync/routine-sync'
 
 export async function POST(_request: NextRequest) {
   try {
@@ -24,32 +24,26 @@ export async function POST(_request: NextRequest) {
       }, { status: 500 })
     }
 
-    // Create sync service
-    const syncService = new HevySyncService(user.id)
+    // Create routine sync service
+    const routineSync = new RoutineSyncService(user.id)
 
-    // Check if sync is already in progress
-    if (await syncService.isSyncInProgress()) {
-      return NextResponse.json(
-        { error: 'Sync already in progress' },
-        { status: 409 }
-      )
-    }
-
-    // Start full sync in background (don't await)
-    // In production, you'd want to use a queue system like BullMQ
-    syncService.fullSync().catch(error => {
-      console.error('Background sync failed:', error)
-    })
+    // Start routine sync
+    const result = await routineSync.syncAllRoutines()
 
     return NextResponse.json({
       success: true,
-      message: 'Full sync started in background'
+      message: 'Routine sync completed',
+      result: {
+        synced: result.synced,
+        failed: result.failed,
+        errors: result.errors
+      }
     })
 
   } catch (error) {
-    console.error('Full sync error:', error)
+    console.error('Routine sync error:', error)
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to start sync' },
+      { error: error instanceof Error ? error.message : 'Failed to sync routines' },
       { status: 500 }
     )
   }

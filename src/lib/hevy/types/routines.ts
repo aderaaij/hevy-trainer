@@ -10,9 +10,9 @@ export interface HevyRoutinesResponse {
 }
 
 export interface Routine {
-  id: string; // UUID format
+  id: string | number; // Can be string or number from API
   title: string;
-  folder_id: string | null;
+  folder_id: string | number | null; // Can be string or number from API
   notes: string;
   created_at: string; // ISO date string
   updated_at: string; // ISO date string

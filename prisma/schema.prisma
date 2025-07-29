@@ -36,6 +36,7 @@ model UserProfile {
   // Relations
   importedWorkouts ImportedWorkout[]
   importedRoutines ImportedRoutine[]
+  importedRoutineFolders ImportedRoutineFolder[]
   importedExerciseTemplates ImportedExerciseTemplate[]
   generatedRoutines GeneratedRoutine[]
   trainingAnalyses TrainingAnalysis[]
@@ -113,10 +114,29 @@ model ImportedRoutine {
   
   // Relations
   userProfile UserProfile @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  folder      ImportedRoutineFolder? @relation(fields: [folderId], references: [hevyFolderId])
 
   @@index([userId, name])
   @@index([userId, lastSyncedAt])
   @@map("imported_routines")
+}
+
+// Store imported routine folders from Hevy
+model ImportedRoutineFolder {
+  id             String   @id @default(cuid())
+  userId         String   @map("user_id")
+  hevyFolderId   String   @unique @map("hevy_folder_id")
+  folderData     Json     @map("folder_data") // Full folder data from Hevy API
+  name           String
+  importedAt     DateTime @default(now()) @map("imported_at")
+  lastSyncedAt   DateTime @default(now()) @map("last_synced_at")
+  
+  // Relations
+  userProfile UserProfile @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  routines    ImportedRoutine[]
+
+  @@index([userId, name])
+  @@map("imported_routine_folders")
 }
 
 // Store imported exercise templates from Hevy

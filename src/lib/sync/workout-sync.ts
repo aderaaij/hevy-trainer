@@ -18,7 +18,7 @@ export class WorkoutSyncService {
   }
 
   /**
-   * Sync all workouts for a user
+   * Sync all workouts for a user (incremental - only missing/updated)
    * Due to Hevy API limitation (max 10 workouts per request), we need to paginate
    */
   async syncAllWorkouts(): Promise<SyncResult> {
@@ -38,37 +38,69 @@ export class WorkoutSyncService {
         }
       })
 
-      // Get total workout count
-      console.log('Fetching workout count...')
+      // Get existing workout IDs from database
+      const existingWorkouts = await prisma.importedWorkout.findMany({
+        where: { userId: this.userId },
+        select: { hevyWorkoutId: true, lastSyncedAt: true }
+      })
+      const existingWorkoutIds = new Set(existingWorkouts.map(w => w.hevyWorkoutId))
+
+      // Get total workout count from API
       const countResponse = await hevyServerClient.get<WorkoutCountResponse>('/workouts/count')
       const totalWorkouts = countResponse.workout_count
-      console.log(`Total workouts from Hevy API: ${totalWorkouts}`)
       
-      // Update sync status with total count
+      // Calculate expected new workouts
+      const expectedNewWorkouts = Math.max(0, totalWorkouts - existingWorkoutIds.size)
+
+      // Update sync status with expected count
       await prisma.syncStatus.update({
         where: { id: syncStatus.id },
-        data: { totalItems: totalWorkouts }
+        data: { totalItems: expectedNewWorkouts }
       })
+
+      // If no new workouts expected, skip API calls
+      if (expectedNewWorkouts === 0) {
+        await prisma.syncStatus.update({
+          where: { id: syncStatus.id },
+          data: {
+            status: 'completed',
+            completedAt: new Date(),
+            itemsSynced: 0,
+            totalItems: 0
+          }
+        })
+        return result
+      }
+
+      // Start from the most recent workouts (first pages) since new workouts are likely recent
 
       // Calculate number of pages (10 workouts per page)
       const pageSize = 10 // Hevy API max limit
       const totalPages = Math.ceil(totalWorkouts / pageSize)
 
-      // Fetch workouts page by page
-      console.log(`Starting to fetch ${totalPages} pages of workouts`)
+      // Fetch workouts page by page, but only sync missing ones
+      let foundNewWorkouts = 0
+      
       for (let page = 1; page <= totalPages; page++) {
         try {
-          console.log(`Fetching workouts page ${page}/${totalPages}`)
           const workoutsResponse = await hevyServerClient.get<WorkoutsResponse>(
             `/workouts?page=${page}&pageSize=${pageSize}`
           )
-          console.log(`Page ${page} returned ${workoutsResponse.workouts?.length || 0} workouts`)
 
-          // Process each workout in the page
+          // Track new workouts in this page
+          
+          // Process each workout in the page, but only sync if not already cached
           for (const workout of workoutsResponse.workouts) {
+            // Skip if workout already exists
+            if (existingWorkoutIds.has(workout.id)) {
+              continue
+            }
+
+            newWorkoutsInPage++
             try {
               await this.syncSingleWorkout(workout)
               result.synced++
+              foundNewWorkouts++
               
               // Update progress
               await prisma.syncStatus.update({
@@ -82,6 +114,12 @@ export class WorkoutSyncService {
                 error: error instanceof Error ? error.message : 'Unknown error'
               })
             }
+          }
+
+
+          // Early termination if we've found all expected new workouts
+          if (foundNewWorkouts >= expectedNewWorkouts) {
+            break
           }
 
           // Add delay to avoid rate limiting
@@ -221,7 +259,6 @@ export class WorkoutSyncService {
    * Sync a single workout
    */
   private async syncSingleWorkout(workout: Workout): Promise<void> {
-    console.log(`Syncing workout ${workout.id}: ${workout.title || 'Untitled'}`)
     
     // Get full workout details
     const fullWorkout = await hevyServerClient.get<Workout>(`/workouts/${workout.id}`)
@@ -230,7 +267,7 @@ export class WorkoutSyncService {
     await prisma.importedWorkout.upsert({
       where: { hevyWorkoutId: workout.id },
       update: {
-        workoutData: fullWorkout as any, // Store full workout data as JSON
+        workoutData: fullWorkout, // Store full workout data as JSON
         name: fullWorkout.title, // Use 'title' instead of 'name'
         performedAt: new Date(fullWorkout.start_time),
         lastSyncedAt: new Date()
@@ -238,7 +275,7 @@ export class WorkoutSyncService {
       create: {
         userId: this.userId,
         hevyWorkoutId: workout.id,
-        workoutData: fullWorkout as any,
+        workoutData: fullWorkout,
         name: fullWorkout.title, // Use 'title' instead of 'name'
         performedAt: new Date(fullWorkout.start_time)
       }

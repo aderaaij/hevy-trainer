@@ -10,7 +10,7 @@ export interface HevyRoutineFoldersResponse {
 }
 
 export interface RoutineFolder {
-  id: string;
+  id: string | number; // Can be string or number from API
   title: string;
   created_at: string; // ISO date string
   updated_at: string; // ISO date string

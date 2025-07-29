@@ -12,6 +12,7 @@ import {
   Database,
   Activity,
   FileText,
+  FolderOpen,
   Dumbbell
 } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
@@ -23,6 +24,10 @@ interface SyncStatusData {
   }
   routines?: {
     totalRoutinesCached: number
+    lastSyncedAt: string | null
+  }
+  routineFolders?: {
+    totalFoldersCached: number
     lastSyncedAt: string | null
   }
   exercises?: {
@@ -154,7 +159,7 @@ export function SyncStatus() {
         )}
 
         {/* Data Overview */}
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-4 gap-4">
           <div className="flex items-center gap-3">
             <Activity className="h-8 w-8 text-neutral-500" />
             <div>
@@ -175,6 +180,18 @@ export function SyncStatus() {
               </p>
               <p className="text-sm text-neutral-600 dark:text-neutral-400">
                 Routines
+              </p>
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-3">
+            <FolderOpen className="h-8 w-8 text-neutral-500" />
+            <div>
+              <p className="text-2xl font-semibold">
+                {status?.routineFolders?.totalFoldersCached ?? 0}
+              </p>
+              <p className="text-sm text-neutral-600 dark:text-neutral-400">
+                Folders  
               </p>
             </div>
           </div>
