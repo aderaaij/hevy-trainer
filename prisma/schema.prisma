@@ -179,3 +179,18 @@ model SyncStatus {
   @@index([userId, syncType, startedAt])
   @@map("sync_status")
 }
+
+// Store error logs for debugging and analysis
+model ErrorLog {
+  id          String   @id @default(cuid())
+  type        String   // "ai_json_parse_error", "api_error", etc.
+  error       String   // error message
+  context     Json?    // additional context data
+  createdAt   DateTime @default(now()) @map("created_at")
+  resolvedAt  DateTime? @map("resolved_at")
+  isResolved  Boolean  @default(false) @map("is_resolved")
+
+  @@index([type, createdAt])
+  @@index([isResolved, createdAt])
+  @@map("error_logs")
+}

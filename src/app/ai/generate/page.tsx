@@ -35,9 +35,11 @@ import { Loader2, Sparkles, AlertCircle } from "lucide-react";
 import axios from "axios";
 
 const formSchema = z.object({
-  routineCount: z.number().min(1).max(7),
+  workoutsPerWeek: z.number().min(1).max(7),
+  sessionDuration: z.number().min(30).max(180),
   duration: z.number().min(1).max(12),
   focusArea: z.string().optional(),
+  splitType: z.enum(["auto", "full_body", "upper_lower", "push_pull_legs", "body_part"]).optional(),
   progressionType: z.enum(["linear", "undulating", "block"]),
   specialInstructions: z.string().max(500).optional(),
 });
@@ -52,9 +54,11 @@ export default function GenerateRoutinePage() {
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      routineCount: 1,
+      workoutsPerWeek: 3,
+      sessionDuration: 60,
       duration: 4,
       progressionType: "linear" as const,
+      splitType: "auto" as const,
       focusArea: undefined,
       specialInstructions: undefined,
     },
@@ -110,22 +114,47 @@ export default function GenerateRoutinePage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <FormField
                   control={form.control}
-                  name="routineCount"
+                  name="workoutsPerWeek"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Number of Routines</FormLabel>
+                      <FormLabel>Workouts Per Week</FormLabel>
                       <FormControl>
                         <Input
                           type="number"
-                          placeholder="1"
+                          placeholder="3"
                           value={field.value}
-                          onChange={(e) => field.onChange(parseInt(e.target.value) || 1)}
+                          onChange={(e) => field.onChange(parseInt(e.target.value) || 3)}
                           min={1}
                           max={7}
                         />
                       </FormControl>
                       <FormDescription>
-                        How many different workout routines to generate (1-7)
+                        How many days per week you plan to train (1-7)
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="sessionDuration"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Session Duration (minutes)</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          placeholder="60"
+                          value={field.value}
+                          onChange={(e) => field.onChange(parseInt(e.target.value) || 60)}
+                          min={30}
+                          max={180}
+                          step={15}
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        How long each workout session should be (30-180 minutes)
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -222,6 +251,47 @@ export default function GenerateRoutinePage() {
                       <FormDescription>
                         Override your profile&apos;s focus areas for this
                         program
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="splitType"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Training Split (Optional)</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Auto (AI decides)" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="auto">
+                            Auto (AI decides based on frequency)
+                          </SelectItem>
+                          <SelectItem value="full_body">
+                            Full Body
+                          </SelectItem>
+                          <SelectItem value="upper_lower">
+                            Upper/Lower Split
+                          </SelectItem>
+                          <SelectItem value="push_pull_legs">
+                            Push/Pull/Legs
+                          </SelectItem>
+                          <SelectItem value="body_part">
+                            Body Part Split
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormDescription>
+                        How to split your training across workouts
                       </FormDescription>
                       <FormMessage />
                     </FormItem>

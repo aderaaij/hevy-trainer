@@ -6,16 +6,39 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Download, ArrowLeft, Clock, Dumbbell, TrendingUp, Calendar } from 'lucide-react';
+import { Loader2, Download, ArrowLeft, Clock, Dumbbell, TrendingUp, Calendar, Repeat2, Target } from 'lucide-react';
 import axios from 'axios';
 import { RoutinePreview } from '@/components/ai/routine-preview';
 import { format } from 'date-fns';
 import { GeneratedRoutine } from '@/types/ai-routines';
 
 
+// Helper function to determine which workout should be done on which day
+function getWorkoutForDay(dayIndex: number, workoutsPerWeek: number, routineCount: number): number | null {
+  // Common training schedules
+  const schedules: Record<number, number[]> = {
+    1: [0], // Monday only
+    2: [0, 3], // Monday, Thursday
+    3: [0, 2, 4], // Monday, Wednesday, Friday
+    4: [0, 1, 3, 4], // Monday, Tuesday, Thursday, Friday
+    5: [0, 1, 2, 3, 4], // Monday through Friday
+    6: [0, 1, 2, 3, 4, 5], // Monday through Saturday
+    7: [0, 1, 2, 3, 4, 5, 6], // Every day
+  };
+
+  const schedule = schedules[workoutsPerWeek] || schedules[3];
+  const workoutDayIndex = schedule.indexOf(dayIndex);
+  
+  if (workoutDayIndex === -1) return null;
+  
+  // Cycle through available routines
+  return workoutDayIndex % routineCount;
+}
+
 export default function RoutineDetailsPage() {
   const params = useParams();
   const router = useRouter();
+  const routineId = Array.isArray(params.id) ? params.id[0] : params.id;
   const [routine, setRoutine] = useState<GeneratedRoutine | null>(null);
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
@@ -23,12 +46,16 @@ export default function RoutineDetailsPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchRoutineDetails();
-  }, [params.id]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (routineId) {
+      fetchRoutineDetails();
+    }
+  }, [routineId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchRoutineDetails = async () => {
+    if (!routineId) return;
+    
     try {
-      const response = await axios.get(`/api/ai/routines/${params.id}`);
+      const response = await axios.get(`/api/ai/routines/${routineId}`);
       setRoutine(response.data);
     } catch (err) {
       console.error('Error fetching routine:', err);
@@ -46,7 +73,7 @@ export default function RoutineDetailsPage() {
 
     try {
       const response = await axios.post('/api/ai/export-routine', {
-        routineId: params.id,
+        routineId: routineId,
         routineIndex
       });
 
@@ -118,13 +145,36 @@ export default function RoutineDetailsPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
               <div className="space-y-1">
                 <div className="flex items-center gap-2 text-muted-foreground">
                   <Calendar className="h-4 w-4" />
                   <span className="text-sm">Duration</span>
                 </div>
                 <p className="font-semibold">{routine.metadata.duration} weeks</p>
+              </div>
+              <div className="space-y-1">
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <Repeat2 className="h-4 w-4" />
+                  <span className="text-sm">Frequency</span>
+                </div>
+                <p className="font-semibold">{routine.metadata.workoutsPerWeek || routine.routines.length}x/week</p>
+              </div>
+              <div className="space-y-1">
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <Clock className="h-4 w-4" />
+                  <span className="text-sm">Session</span>
+                </div>
+                <p className="font-semibold">{routine.metadata.sessionDuration || 60} min</p>
+              </div>
+              <div className="space-y-1">
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <Dumbbell className="h-4 w-4" />
+                  <span className="text-sm">Split</span>
+                </div>
+                <p className="font-semibold capitalize">
+                  {routine.metadata.splitType?.replace(/_/g, ' ') || 'Custom'}
+                </p>
               </div>
               <div className="space-y-1">
                 <div className="flex items-center gap-2 text-muted-foreground">
@@ -135,19 +185,12 @@ export default function RoutineDetailsPage() {
               </div>
               <div className="space-y-1">
                 <div className="flex items-center gap-2 text-muted-foreground">
-                  <Dumbbell className="h-4 w-4" />
+                  <Target className="h-4 w-4" />
                   <span className="text-sm">Focus</span>
                 </div>
                 <p className="font-semibold capitalize">
                   {routine.metadata.focusArea || 'Balanced'}
                 </p>
-              </div>
-              <div className="space-y-1">
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <Clock className="h-4 w-4" />
-                  <span className="text-sm">Routines</span>
-                </div>
-                <p className="font-semibold">{routine.routines.length}</p>
               </div>
             </div>
           </CardContent>
@@ -162,6 +205,33 @@ export default function RoutineDetailsPage() {
           </TabsList>
 
           <TabsContent value="routines" className="space-y-4">
+            {/* Training Schedule Card */}
+            {routine.metadata.workoutsPerWeek && routine.routines.length > 1 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Weekly Training Schedule</CardTitle>
+                  <CardDescription>
+                    Recommended training days for your {routine.metadata.workoutsPerWeek}x/week program
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-7 gap-2">
+                    {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day, dayIndex) => {
+                      const workoutIndex = getWorkoutForDay(dayIndex, routine.metadata.workoutsPerWeek || 3, routine.routines.length);
+                      return (
+                        <div key={day} className="text-center">
+                          <div className="text-sm font-medium mb-1">{day}</div>
+                          <div className={`p-2 rounded-md text-xs ${workoutIndex !== null ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
+                            {workoutIndex !== null ? routine.routines[workoutIndex].title.split(':')[1]?.trim() || `Day ${workoutIndex + 1}` : 'Rest'}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             {routine.routines.map((r, index) => (
               <Card key={index}>
                 <CardHeader>

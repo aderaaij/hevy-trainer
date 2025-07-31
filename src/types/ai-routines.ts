@@ -33,6 +33,9 @@ export interface Routine {
 // Metadata about a generated routine
 export interface RoutineMetadata {
   duration: number;
+  workoutsPerWeek?: number;
+  sessionDuration?: number;
+  splitType?: string;
   progressionType: string;
   focusArea: string | null;
   exerciseCount?: number;
