@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { hevyServerClient } from "@/app/api/hevy/lib/hevy-server-client";
 
-export async function GET(_request: NextRequest) {
+export async function GET() {
   try {
     const supabase = await createClient();
 
@@ -15,7 +15,14 @@ export async function GET(_request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const tests: Record<string, any> = {};
+    const tests: Record<string, {
+      status: string;
+      data?: unknown;
+      error?: {
+        message: string;
+        status: number;
+      };
+    }> = {};
 
     // Test routine folders without pagination
     try {
@@ -29,7 +36,7 @@ export async function GET(_request: NextRequest) {
         status: "error",
         error: {
           message: error instanceof Error ? error.message : 'Unknown error',
-          status: (error as any)?.status || 500,
+          status: (error as { status?: number })?.status || 500,
         },
       };
     }
@@ -46,7 +53,7 @@ export async function GET(_request: NextRequest) {
         status: "error",
         error: {
           message: error instanceof Error ? error.message : 'Unknown error',
-          status: (error as any)?.status || 500,
+          status: (error as { status?: number })?.status || 500,
         },
       };
     }
@@ -65,7 +72,7 @@ export async function GET(_request: NextRequest) {
         status: "error",
         error: {
           message: error instanceof Error ? error.message : 'Unknown error',
-          status: (error as any)?.status || 500,
+          status: (error as { status?: number })?.status || 500,
         },
       };
     }

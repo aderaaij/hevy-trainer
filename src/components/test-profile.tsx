@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -27,7 +27,7 @@ export function TestProfile() {
   const [isCreating, setIsCreating] = useState(false)
   const supabase = createClient()
 
-  async function loadProfile() {
+  const loadProfile = useCallback(async () => {
     try {
       setIsLoading(true)
       setError(null)
@@ -59,7 +59,7 @@ export function TestProfile() {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [supabase])
 
   async function createProfile() {
     try {
@@ -104,7 +104,7 @@ export function TestProfile() {
 
   useEffect(() => {
     loadProfile()
-  }, [])
+  }, [loadProfile])
 
   return (
     <Card>

@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { hevyServerClient } from '@/app/api/hevy/lib/hevy-server-client'
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const supabase = await createClient()
     
@@ -26,13 +26,13 @@ export async function GET(request: NextRequest) {
         status: 'success',
         data: workoutsResponse
       })
-    } catch (error: any) {
+    } catch (error) {
       tests.push({
         endpoint: '/workouts/count',
         status: 'error',
         error: {
-          message: error.message,
-          status: error.status
+          message: error instanceof Error ? error.message : 'Unknown error',
+          status: (error as { status?: number })?.status
         }
       })
     }
@@ -46,13 +46,13 @@ export async function GET(request: NextRequest) {
         status: 'success',
         data: routinesResponse
       })
-    } catch (error: any) {
+    } catch (error) {
       tests.push({
         endpoint: '/routines?page=1&pageSize=5',
         status: 'error',
         error: {
-          message: error.message,
-          status: error.status
+          message: error instanceof Error ? error.message : 'Unknown error',
+          status: (error as { status?: number })?.status
         }
       })
     }
@@ -66,13 +66,13 @@ export async function GET(request: NextRequest) {
         status: 'success',
         data: foldersResponse
       })
-    } catch (error: any) {
+    } catch (error) {
       tests.push({
         endpoint: '/routine_folders?page=1&pageSize=5',
         status: 'error',
         error: {
-          message: error.message,
-          status: error.status
+          message: error instanceof Error ? error.message : 'Unknown error',
+          status: (error as { status?: number })?.status
         }
       })
     }
@@ -86,13 +86,13 @@ export async function GET(request: NextRequest) {
         status: 'success',
         data: exercisesResponse
       })
-    } catch (error: any) {
+    } catch (error) {
       tests.push({
         endpoint: '/exercise_templates?page=1&pageSize=5',
         status: 'error',
         error: {
-          message: error.message,
-          status: error.status
+          message: error instanceof Error ? error.message : 'Unknown error',
+          status: (error as { status?: number })?.status
         }
       })
     }
@@ -106,13 +106,13 @@ export async function GET(request: NextRequest) {
         status: 'success',
         data: routinesResponse
       })
-    } catch (error: any) {
+    } catch (error) {
       tests.push({
         endpoint: '/routines',
         status: 'error',
         error: {
-          message: error.message,
-          status: error.status
+          message: error instanceof Error ? error.message : 'Unknown error',
+          status: (error as { status?: number })?.status
         }
       })
     }

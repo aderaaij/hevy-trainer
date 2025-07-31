@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { HevySyncService } from '@/lib/sync/sync-service'
 
-export async function POST(_request: NextRequest) {
+export async function POST() {
   try {
     const supabase = await createClient()
     

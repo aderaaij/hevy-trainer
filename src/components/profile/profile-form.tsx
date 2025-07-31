@@ -29,7 +29,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { AlertCircle, CheckCircle, Loader2 } from "lucide-react"
 import { FOCUS_AREAS, COMMON_INJURIES } from "@/lib/constants/profile"
-import { calculateAge, formatDateForInput, isValidBirthDate, getMinBirthDateObject, getMaxBirthDateObject } from "@/lib/utils/age"
+import { calculateAge, getMinBirthDateObject, getMaxBirthDateObject } from "@/lib/utils/age"
 import { DatePicker } from "@/components/ui/date-picker"
 
 const profileSchema = z.object({

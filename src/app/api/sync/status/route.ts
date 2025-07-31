@@ -1,11 +1,11 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { HevySyncService } from '@/lib/sync/sync-service'
 import { PrismaClient } from '@/generated/prisma'
 
 const prisma = new PrismaClient()
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const supabase = await createClient()
     

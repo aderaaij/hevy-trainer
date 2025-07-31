@@ -8,8 +8,6 @@ import {
   RefreshCw, 
   CheckCircle, 
   AlertCircle, 
-  Clock, 
-  Database,
   Activity,
   FileText,
   FolderOpen,

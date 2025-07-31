@@ -2,7 +2,7 @@ import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { User, Settings, Home } from "lucide-react"
+import { User, Settings, Home, Sparkles, History } from "lucide-react"
 import { SyncStatus } from "@/components/sync/sync-status"
 import { TestIndividualSync } from "@/components/test-individual-sync"
 
@@ -59,7 +59,7 @@ export default async function DashboardPage() {
         {/* Individual Sync Testing */}
         <TestIndividualSync />
         
-        <div className="grid md:grid-cols-3 gap-6">
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
           <div className="p-6 bg-white dark:bg-neutral-800 rounded-lg shadow">
             <h3 className="font-semibold mb-2">Import Workouts</h3>
             <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-4">
@@ -71,13 +71,33 @@ export default async function DashboardPage() {
           </div>
           
           <div className="p-6 bg-white dark:bg-neutral-800 rounded-lg shadow">
-            <h3 className="font-semibold mb-2">Generate Routine</h3>
+            <h3 className="font-semibold mb-2 flex items-center gap-2">
+              <Sparkles className="h-5 w-5" />
+              Generate Routine
+            </h3>
             <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-4">
               Create AI-powered workout routines based on your history
             </p>
-            <button className="px-4 py-2 bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 rounded hover:opacity-90">
-              Coming soon
-            </button>
+            <Link href="/ai/generate">
+              <Button className="w-full">
+                Generate Routine
+              </Button>
+            </Link>
+          </div>
+          
+          <div className="p-6 bg-white dark:bg-neutral-800 rounded-lg shadow">
+            <h3 className="font-semibold mb-2 flex items-center gap-2">
+              <History className="h-5 w-5" />
+              Routine History
+            </h3>
+            <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-4">
+              View and manage your AI-generated routines
+            </p>
+            <Link href="/ai/history">
+              <Button variant="outline" className="w-full">
+                View History
+              </Button>
+            </Link>
           </div>
           
           <div className="p-6 bg-white dark:bg-neutral-800 rounded-lg shadow">
